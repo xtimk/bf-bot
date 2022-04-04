@@ -8,6 +8,6 @@ namespace bf_bot
     public class BetfairApiResult<T>
     {
         public bool IsSuccessfull { get; set; }
-        public T Details { get; set; }
+        public T? Details { get; set; }
     }
 }

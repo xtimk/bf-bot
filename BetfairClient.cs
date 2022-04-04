@@ -44,24 +44,25 @@ namespace bf_bot
                 try
                 {
                     var response = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
+                    response.HttpResponseMessage = httpResponse;
+
                     AuthToken = response?.Token;
-                    Console.WriteLine(AuthToken);
+                    result.Details = response;
+
+                    // Console.WriteLine(AuthToken);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
                 }
-
-                if (String.IsNullOrEmpty(AuthToken))
-                {
-                    result.IsSuccessfull = false;
-                    result.Details = null;
-                }
-                else
-                {
-                    result.IsSuccessfull = true;
-                    result.Details = null;
-                }
+                result.IsSuccessfull = !String.IsNullOrEmpty(AuthToken);
+            }
+            else
+            {
+                result.IsSuccessfull = false;
+                result.Details = new BetfairLoginResponse{
+                    HttpResponseMessage = httpResponse
+                };
             }
 
 
