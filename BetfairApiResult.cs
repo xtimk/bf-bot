@@ -9,5 +9,6 @@ namespace bf_bot
     {
         public bool IsSuccessfull { get; set; }
         public T? Details { get; set; }
+        public HttpResponseMessage? HttpResponseMessage { get; set; }
     }
 }

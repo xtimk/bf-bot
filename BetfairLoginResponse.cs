@@ -18,6 +18,5 @@ namespace bf_bot
         public string? Error { get; set; }
         [JsonPropertyName("lastLoginDate")]
         public string? LastLoginDate { get; set; }
-        public HttpResponseMessage? HttpResponseMessage { get; set; }
     }
 }

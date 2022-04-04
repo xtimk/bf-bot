@@ -13,7 +13,6 @@ namespace bf_bot
         public string? AuthToken { get; set; }
         public BetfairClient()
         {
-            // nothing todo here..
         }
         public async Task<BetfairApiResult<BetfairLoginResponse>> Login()
         {
@@ -44,10 +43,10 @@ namespace bf_bot
                 try
                 {
                     var response = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
-                    response.HttpResponseMessage = httpResponse;
-
                     AuthToken = response?.Token;
+
                     result.Details = response;
+                    result.HttpResponseMessage = httpResponse;
 
                     // Console.WriteLine(AuthToken);
                 }
@@ -60,9 +59,7 @@ namespace bf_bot
             else
             {
                 result.IsSuccessfull = false;
-                result.Details = new BetfairLoginResponse{
-                    HttpResponseMessage = httpResponse
-                };
+                result.HttpResponseMessage = httpResponse;
             }
 
 
