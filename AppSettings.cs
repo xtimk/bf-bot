@@ -15,6 +15,9 @@ namespace bf_bot
         public string Password { get; set; }
         public string AppKey { get; set; }
         public string  AuthEndPoint { get; set; }
+
+        public string BettingEndpoint { get; set; }
+        public string AccountEndpoint { get; set; }
         private static readonly AppSettings instance = new AppSettings();    
         static AppSettings()    
         {    
@@ -32,7 +35,13 @@ namespace bf_bot
             Username = betfairLoginSettings.GetValue<string>("Username");
             Password = betfairLoginSettings.GetValue<string>("Password");
             AppKey = betfairLoginSettings.GetValue<string>("AppKey");
-            AuthEndPoint = betfairLoginSettings.GetValue<string>("AuthEndPoint");
+
+            var betfairEndpoints = config.GetSection("BetfairEndpoints");
+            BettingEndpoint = betfairEndpoints.GetValue<string>("BettingEndpoint");
+            AccountEndpoint = betfairEndpoints.GetValue<string>("AccountEndpoint");
+            AuthEndPoint = betfairEndpoints.GetValue<string>("AuthEndpoint");
+
+            
         }    
         public static AppSettings Instance    
         {    

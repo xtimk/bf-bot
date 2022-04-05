@@ -1,10 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using bf_bot;
 
+// create initializer obj, where are stored all the necessary things to create the client.
+var initializer = Utility.CreateInitializer();
 
-// AppSettings app = AppSettings.Instance;
+BetfairClient client = new BetfairClient(initializer);
 
-BetfairClient client = new BetfairClient();
 var loginResult = await client.Login();
 
 if(loginResult.IsSuccessfull)
