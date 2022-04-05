@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
 
-namespace bf_bot.Extentions
+namespace bf_bot.Extensions
 {
-    public static class HttpClientExtention
+    public static class HttpClientExtension
     {
         public static void AddBaseHeaders(this HttpRequestMessage request)
         {
