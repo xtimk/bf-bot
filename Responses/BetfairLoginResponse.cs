@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace bf_bot
 {
-    public class BetfairLoginResponse
+    public class BetfairLoginResponse : BetfairApiResult
     {
         [JsonPropertyName("token")]
         public string? Token { get; set; }

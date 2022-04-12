@@ -11,9 +11,7 @@ namespace bf_bot
 {
     public class BetfairClient
     {
-        
         public string? AuthToken { get; set; }
-
         protected BetfairClientInitializer _betfairSettings;
         public BetfairClient(BetfairClientInitializer _betfairSettings)
         {
@@ -27,52 +25,63 @@ namespace bf_bot
             }
         }
 
-        // public T Invoke<T>(string method, IDictionary<string, object> args = null)
-        // {
-        //     if (method == null)
-        //         throw new ArgumentNullException("method");
-        //     if (method.Length == 0)
-        //         throw new ArgumentException(null, "method");
-
-        //     var restEndpoint = EndPoint + method + "/";
-        //     var request = CreateWebRequest(restEndpoint);
-
-        //     var postData = JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}";
-
-        //     Console.WriteLine("\nCalling: " + method + " With args: " + postData);
-
-        //     var bytes = Encoding.GetEncoding("UTF-8").GetBytes(postData);
-        //     request.ContentLength = bytes.Length;
-
-        //     using (Stream stream = request.GetRequestStream())
-        //     {
-        //         stream.Write(bytes, 0, bytes.Length);
-        //     }
-
-        //     using (HttpWebResponse response = (HttpWebResponse)GetWebResponse(request))
-           
-        //     using (Stream stream = response.GetResponseStream())
-        //     using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
-        //     {
-
-        //         var jsonResponse = reader.ReadToEnd();
-        //         Console.WriteLine("\nGot response: " + jsonResponse);
-                
-        //         if (response.StatusCode != HttpStatusCode.OK) {
-        //             throw ReconstituteException(JsonConvert.Deserialize<Api_ng_sample_code.TO.Exception>(jsonResponse));
-        //         }
-        //         return JsonSerializer.Deserialize<T>(jsonResponse);
-
-        //     }
-        // }
-
-
-        public async Task<BetfairApiResult<BetfairLoginResponse>> Login()
+        public async Task<T> Invoke<T>(string method, IDictionary<string, object> args = null) where T : BetfairApiResult, new()
         {
-            BetfairApiResult<BetfairLoginResponse> result = new BetfairApiResult<BetfairLoginResponse>
+            // init result
+            T result = new T();
+
+            if (method == null)
+                throw new ArgumentNullException("method");
+            if (method.Length == 0)
+                throw new ArgumentException(null, "method");
+
+            var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
+            requestMessage.AddBaseHeaders(_betfairSettings.BetfairLoginCredentials.AppKey);
+            
+            if(AuthToken != null)
+                requestMessage.AddAuthHeader(AuthToken);
+
+            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
+            requestMessage.Content = postData;
+
+            Console.WriteLine("\nCalling: " + method + " With args: " + postData);
+            HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
+            if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                IsSuccessfull = false,
-                Details = null
+                try
+                {
+                    string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    if(httpResponseBody == null)
+                        throw new HttpRequestException();
+                    result = JsonSerializer.Deserialize<T>(httpResponseBody);
+                    result.IsOk = true;
+                    result.HttpResponseMessage = httpResponse;
+                    return result;
+                }
+                catch (Exception e)
+                {
+                    result.IsOk = false;
+                    result.Exception = e;
+                    result.HttpResponseMessage = httpResponse;
+                    return result;
+                }
+
+            }
+            else
+            {
+                string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
+                throw new HttpRequestException(errorMessage);
+            }
+        }
+
+
+        public async Task<BetfairLoginResponse> Login()
+        {
+            BetfairLoginResponse result = new BetfairLoginResponse
+            {
+                IsOk = false
             };
 
             var content = new FormUrlEncodedContent(new[]
@@ -82,50 +91,40 @@ namespace bf_bot
             });
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
-            requestMessage.AddBaseHeaders();
+            requestMessage.AddBaseHeaders(_betfairSettings.BetfairLoginCredentials.AppKey);
             requestMessage.Content = content;
 
             HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
-            // httpResponse.EnsureSuccessStatusCode();
             
             if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
                 try
                 {
-                    var response = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
+                    result = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
 
-                    if((response != null) && response.Status == "SUCCESS")
+                    if(result.Status == "SUCCESS")
                     {
-                        AuthToken = response?.Token;
-                        result.Details = response;
+                        AuthToken = result?.Token;
                         result.HttpResponseMessage = httpResponse;
-                        result.IsSuccessfull = true;
+                        result.IsOk = true;
                     }
                     else
                     {
-                        result.IsSuccessfull = false;
+                        result.IsOk = false;
                     }
-
-
-                    // Console.WriteLine(AuthToken);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e);
                 }
             }
-            // the server answer is != from 200
             else
             {
-                result.IsSuccessfull = false;
+                result.IsOk = false;
                 result.HttpResponseMessage = httpResponse;
             }
-
-
             return result;
-
         }
-
     }
 }
