@@ -9,9 +9,9 @@ namespace bf_bot
     {
         public bool IsOk { get; set; }
         // public T? SuccessDetails { get; set; }
-        public HttpResponseMessage? HttpResponseMessage { get; set; }
+        public HttpResponseMessage HttpResponseMessage { get; set; }
 
-        public Exception? Exception { get; set; }
+        public Exception Exception { get; set; }
 
         public BetfairApiResult()
         {

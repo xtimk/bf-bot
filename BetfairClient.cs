@@ -1,17 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using bf_bot.Extensions;
 
 namespace bf_bot
 {
     public class BetfairClient
     {
-        public string? AuthToken { get; set; }
+        public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
         public BetfairClient(BetfairClientInitializer _betfairSettings)
         {
