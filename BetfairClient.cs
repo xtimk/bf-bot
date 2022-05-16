@@ -4,11 +4,11 @@ using bf_bot.Extensions;
 
 namespace bf_bot
 {
-    public class BetfairClient
+    public class BetfairClientAuthenticator
     {
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
-        public BetfairClient(BetfairClientInitializer _betfairSettings)
+        public BetfairClientAuthenticator(BetfairClientInitializer _betfairSettings)
         {
             if(Utility.AreAllPropNotNull(_betfairSettings))
             {
@@ -20,66 +20,66 @@ namespace bf_bot
             }
         }
 
-        public async Task<T> Invoke<T>(string method, IDictionary<string, object> args) where T : BetfairApiResult, new()
-        {
-            // init result
-            T result = new T();
+        // public async Task<T> Invoke<T>(string method, IDictionary<string, object> args) where T : BetfairApiResult, new()
+        // {
+        //     // init result
+        //     T result = new T();
 
-            if (method == null)
-                throw new ArgumentNullException("method");
-            if (method.Length == 0)
-                throw new ArgumentException(null, "method");
+        //     if (method == null)
+        //         throw new ArgumentNullException("method");
+        //     if (method.Length == 0)
+        //         throw new ArgumentException(null, "method");
 
-            var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
+        //     var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
 
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
+        //     HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
 
-            var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
-            if (appKey == null)
-                throw new Exception("AppKey should not be null here. This exception should never be raised.");
+        //     var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
+        //     if (appKey == null)
+        //         throw new Exception("AppKey should not be null here. This exception should never be raised.");
             
-            requestMessage.AddBaseHeaders(appKey);
+        //     requestMessage.AddBaseHeaders(appKey);
 
-            // if there is an auth token I add it, otherwhise no.
-            if(AuthToken != null)
-                requestMessage.AddAuthHeader(AuthToken);
+        //     // if there is an auth token I add it, otherwhise no.
+        //     if(AuthToken != null)
+        //         requestMessage.AddAuthHeader(AuthToken);
 
-            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
-            requestMessage.Content = postData;
+        //     var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
+        //     requestMessage.Content = postData;
 
-            Console.WriteLine("\nCalling: " + method + " With args: " + postData);
-            HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
-            if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                try
-                {
-                    string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                    if(httpResponseBody == null)
-                        throw new HttpRequestException();
+        //     Console.WriteLine("\nCalling: " + method + " With args: " + postData);
+        //     HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
+        //     if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
+        //     {
+        //         try
+        //         {
+        //             string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+        //             if(httpResponseBody == null)
+        //                 throw new HttpRequestException();
 
-                    var jres = JsonSerializer.Deserialize<T>(httpResponseBody);
-                    if (jres == null)
-                        throw new Exception("Error while deserializing object.");
-                    result = jres;
+        //             var jres = JsonSerializer.Deserialize<T>(httpResponseBody);
+        //             if (jres == null)
+        //                 throw new Exception("Error while deserializing object.");
+        //             result = jres;
                        
-                    result.IsOk = true;
-                    result.HttpResponseMessage = httpResponse;
-                    return result;
-                }
-                catch (Exception e)
-                {
-                    result.IsOk = false;
-                    result.Exception = e;
-                    result.HttpResponseMessage = httpResponse;
-                    return result;
-                }
-            }
-            else
-            {
-                string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
-                throw new HttpRequestException(errorMessage);
-            }
-        }
+        //             result.IsOk = true;
+        //             result.HttpResponseMessage = httpResponse;
+        //             return result;
+        //         }
+        //         catch (Exception e)
+        //         {
+        //             result.IsOk = false;
+        //             result.Exception = e;
+        //             result.HttpResponseMessage = httpResponse;
+        //             return result;
+        //         }
+        //     }
+        //     else
+        //     {
+        //         string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
+        //         throw new HttpRequestException(errorMessage);
+        //     }
+        // }
 
 
         public async Task<BetfairLoginResponse> Login()

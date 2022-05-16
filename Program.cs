@@ -4,7 +4,7 @@ using bf_bot;
 // create initializer obj, where are stored all the necessary things to create the client.
 var initializer = Utility.CreateInitializer();
 
-BetfairClient client = new BetfairClient(initializer);
+BetfairClientAuthenticator client = new BetfairClientAuthenticator(initializer);
 
 var loginResult = await client.Login();
 
@@ -19,4 +19,5 @@ else
 {
     Console.WriteLine("Error when logging in.");
     Console.WriteLine(Utility.PrettyJsonObject(loginResult));
+    throw new Exception("Cannot authenticate.");
 }
