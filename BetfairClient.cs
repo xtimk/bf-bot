@@ -3,6 +3,7 @@ using System.Text.Json;
 using bf_bot.Extensions;
 using bf_bot.TO;
 using bf_bot.Json;
+using Microsoft.Extensions.Logging;
 
 namespace bf_bot
 {
@@ -10,8 +11,10 @@ namespace bf_bot
     {
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
-        public BetfairClient(BetfairClientInitializer _betfairSettings)
+        private readonly ILogger _logger;
+        public BetfairClient(BetfairClientInitializer _betfairSettings, ILogger logger)
         {
+            _logger = logger;
             if(Utility.AreAllPropNotNull(_betfairSettings))
             {
                 this._betfairSettings = _betfairSettings;
@@ -184,12 +187,19 @@ namespace bf_bot
 
             // if there is an auth token I add it, otherwhise no.
             if(AuthToken != null)
+            {
                 requestMessage.AddAuthHeader(AuthToken);
+            }
+            else
+            {
+                _logger.LogWarning("The authentication token is not configured.");
+            }
 
             var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
             requestMessage.Content = postData;
 
-            Console.WriteLine("\nCalling: " + method + " With args: " + postData);
+            _logger.LogDebug("Calling method <" + method + "> With args: " + postData.ReadAsStringAsync().Result);
+
             HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
             if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -200,20 +210,40 @@ namespace bf_bot
                 }
                 catch (System.Exception e)
                 {
-                    Console.WriteLine(e);
+                    _logger.LogError("Error while calling method <" + method + "> with args: " + postData.ReadAsStringAsync().Result, e.Message);
                     throw new HttpRequestException(e.Message);
                 }
             }
             else
             {
                 string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
-                throw new HttpRequestException(errorMessage);
+                _logger.LogError(errorMessage);
+                _logger.LogError(httpResponse.Content.ToString());
+                string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                throw ReconstituteException(JsonConvert.Deserialize<bf_bot.TO.Exception>(httpResponseBody));
             }
         }
 
 
-        public async Task<BetfairLoginResponse> Login()
+        public async Task<bool> RequestLogin()
         {
+            _logger.LogInformation("Login requested.");
+            var loginResult = await this.Login();
+            if(loginResult.IsOk)
+            {
+                _logger.LogInformation("Successfully logged in.");
+                return true;
+            }
+            else
+            {
+                _logger.LogWarning("Cant authenticate user.");
+                _logger.LogDebug(Utility.PrettyJsonObject(loginResult));
+                return false;
+            } 
+        }
+        private async Task<BetfairLoginResponse> Login()
+        {
+            _logger.LogInformation("Requested login to betfair.");
             BetfairLoginResponse result = new BetfairLoginResponse
             {
                 IsOk = false
@@ -223,7 +253,10 @@ namespace bf_bot
             var bf_password = _betfairSettings?.BetfairLoginCredentials?.Password;
 
             if (bf_username == null || bf_password == null)
+            {
+                _logger.LogError("Username or Password are null. This should never happen.");
                 throw new System.Exception("Username or Password should not be null here. This exception should never happen.");
+            }
 
             var content = new FormUrlEncodedContent(new[]
             {
@@ -235,7 +268,10 @@ namespace bf_bot
 
             var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
             if (appKey == null)
+            {
+                _logger.LogError("AppKey is null. This should never happen.");
                 throw new System.Exception("AppKey should not be null here. This exception should never be raised.");
+            }
 
             requestMessage.AddBaseHeaders(appKey);
             requestMessage.Content = content;
@@ -265,6 +301,7 @@ namespace bf_bot
                 }
                 catch (System.Exception e)
                 {
+                    _logger.LogError("An error has been encountered while reading the login response. Trace:\n" + e.Message);
                     Console.WriteLine(e);
                 }
             }

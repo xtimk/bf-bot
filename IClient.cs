@@ -5,6 +5,11 @@ namespace bf_bot
     public interface IClient
     {
         /**
+        * calls indentitysso for authenticating user and sets session token
+        * 
+        * */
+        Task<bool> RequestLogin();
+        /**
          * calls api-ng to get a list of events
          * 
          * */
