@@ -4,7 +4,7 @@ using bf_bot;
 // create initializer obj, where are stored all the necessary things to create the client.
 var initializer = Utility.CreateInitializer();
 
-BetfairClientAuthenticator client = new BetfairClientAuthenticator(initializer);
+BetfairClient client = new BetfairClient(initializer);
 
 var loginResult = await client.Login();
 
