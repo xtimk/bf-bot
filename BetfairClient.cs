@@ -1,14 +1,17 @@
 using System.Text;
 using System.Text.Json;
 using bf_bot.Extensions;
+using bf_bot.TO;
+using bf_bot.Constants;
+using bf_bot.Json;
 
 namespace bf_bot
 {
-    public class BetfairClientAuthenticator
+    public class BetfairClient : IClient
     {
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
-        public BetfairClientAuthenticator(BetfairClientInitializer _betfairSettings)
+        public BetfairClient(BetfairClientInitializer _betfairSettings)
         {
             if(Utility.AreAllPropNotNull(_betfairSettings))
             {
@@ -20,66 +23,195 @@ namespace bf_bot
             }
         }
 
-        // public async Task<T> Invoke<T>(string method, IDictionary<string, object> args) where T : BetfairApiResult, new()
-        // {
-        //     // init result
-        //     T result = new T();
+        public async Task<IList<EventTypeResult>> listEventTypes(MarketFilter marketFilter, string locale = null)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.FILTER] = marketFilter;
+            args[Constants.BetfairConstants.LOCALE] = locale;
+            return await Invoke<List<EventTypeResult>>(Constants.BetfairConstants.LIST_EVENT_TYPES_METHOD, args);
 
-        //     if (method == null)
-        //         throw new ArgumentNullException("method");
-        //     if (method.Length == 0)
-        //         throw new ArgumentException(null, "method");
+        }
 
-        //     var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
+        public async Task<IList<MarketCatalogue>> listMarketCatalogue(MarketFilter marketFilter, ISet<MarketProjection> marketProjections, MarketSort marketSort, string maxResult = "1", string locale = null)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.FILTER] = marketFilter;
+            args[Constants.BetfairConstants.MARKET_PROJECTION] = marketProjections;
+            args[Constants.BetfairConstants.SORT] = marketSort;
+            args[Constants.BetfairConstants.MAX_RESULTS] = maxResult;
+            args[Constants.BetfairConstants.LOCALE] = locale;
+            return await Invoke<List<MarketCatalogue>>(Constants.BetfairConstants.LIST_MARKET_CATALOGUE_METHOD, args);
+        }
 
-        //     HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
+        public async Task<IList<MarketBook>> listMarketBook(IList<string> marketIds, PriceProjection priceProjection, OrderProjection? orderProjection = null, MatchProjection? matchProjection = null, string currencyCode = null, string locale = null)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
+            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;
+            args[Constants.BetfairConstants.ORDER_PROJECTION] = orderProjection;
+            args[Constants.BetfairConstants.MATCH_PROJECTION] = matchProjection;
+            args[Constants.BetfairConstants.LOCALE] = locale;
+            args[Constants.BetfairConstants.CURRENCY_CODE] = currencyCode;
+            return await Invoke<List<MarketBook>>(Constants.BetfairConstants.LIST_MARKET_BOOK_METHOD, args);
+        }
 
-        //     var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
-        //     if (appKey == null)
-        //         throw new Exception("AppKey should not be null here. This exception should never be raised.");
+        public async Task<PlaceExecutionReport> placeOrders(string marketId, string customerRef, IList<PlaceInstruction> placeInstructions, string locale = null)
+        {
+            var args = new Dictionary<string, object>();
+
+            args[Constants.BetfairConstants.MARKET_ID] = marketId;
+            args[Constants.BetfairConstants.INSTRUCTIONS] = placeInstructions;
+            args[Constants.BetfairConstants.CUSTOMER_REFERENCE] = customerRef;
+            args[Constants.BetfairConstants.LOCALE] = locale;
+
+            return await Invoke<PlaceExecutionReport>(Constants.BetfairConstants.PLACE_ORDERS_METHOD, args);
+        }
+        
+        private static System.Exception ReconstituteException(bf_bot.TO.Exception ex)
+        {
+            var data = ex.Detail;
+        
+            // API-NG exception -- it must have "data" element to tell us which exception
+            var exceptionName = data.Property("exceptionname").Value.ToString();
+            var exceptionData = data.Property(exceptionName).Value.ToString();
+            return JsonConvert.Deserialize<APINGException>(exceptionData);
             
-        //     requestMessage.AddBaseHeaders(appKey);
+        }
 
-        //     // if there is an auth token I add it, otherwhise no.
-        //     if(AuthToken != null)
-        //         requestMessage.AddAuthHeader(AuthToken);
+        public async Task<IList<MarketProfitAndLoss>> listMarketProfitAndLoss(IList<string> marketIds, bool includeSettledBets = false, bool includeBspBets = false, bool netOfCommission = false)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
+            args[Constants.BetfairConstants.INCLUDE_SETTLED_BETS] = includeSettledBets;
+            args[Constants.BetfairConstants.INCLUDE_BSP_BETS] = includeBspBets;
+            args[Constants.BetfairConstants.NET_OF_COMMISSION] = netOfCommission;
 
-        //     var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
-        //     requestMessage.Content = postData;
+            return await Invoke<List<MarketProfitAndLoss>>(Constants.BetfairConstants.LIST_MARKET_PROFIT_AND_LOST_METHOD, args);
+        }
 
-        //     Console.WriteLine("\nCalling: " + method + " With args: " + postData);
-        //     HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
-        //     if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
-        //     {
-        //         try
-        //         {
-        //             string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-        //             if(httpResponseBody == null)
-        //                 throw new HttpRequestException();
+        public async Task<CurrentOrderSummaryReport> listCurrentOrders(ISet<String> betIds, ISet<String> marketIds, OrderProjection? orderProjection = null, TimeRange placedDateRange = null, OrderBy? orderBy = null, SortDir? sortDir = null, int? fromRecord = null, int? recordCount = null)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.BET_IDS] = betIds;
+            args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
+            args[Constants.BetfairConstants.ORDER_PROJECTION] = orderProjection;
+            args[Constants.BetfairConstants.PLACED_DATE_RANGE] = placedDateRange;
+            args[Constants.BetfairConstants.ORDER_BY] = orderBy;
+            args[Constants.BetfairConstants.SORT_DIR] = sortDir;
+            args[Constants.BetfairConstants.FROM_RECORD] = fromRecord;
+            args[Constants.BetfairConstants.RECORD_COUNT] = recordCount;
 
-        //             var jres = JsonSerializer.Deserialize<T>(httpResponseBody);
-        //             if (jres == null)
-        //                 throw new Exception("Error while deserializing object.");
-        //             result = jres;
-                       
-        //             result.IsOk = true;
-        //             result.HttpResponseMessage = httpResponse;
-        //             return result;
-        //         }
-        //         catch (Exception e)
-        //         {
-        //             result.IsOk = false;
-        //             result.Exception = e;
-        //             result.HttpResponseMessage = httpResponse;
-        //             return result;
-        //         }
-        //     }
-        //     else
-        //     {
-        //         string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
-        //         throw new HttpRequestException(errorMessage);
-        //     }
-        // }
+            return await Invoke<CurrentOrderSummaryReport>(Constants.BetfairConstants.LIST_CURRENT_ORDERS_METHOD, args);
+        }
+
+        public async Task<ClearedOrderSummaryReport> listClearedOrders(BetStatus betStatus, ISet<string> eventTypeIds = null, ISet<string> eventIds = null, ISet<string> marketIds = null, ISet<RunnerId> runnerIds = null, ISet<string> betIds = null, Side? side = null, TimeRange settledDateRange = null, GroupBy? groupBy = null, bool? includeItemDescription = null, String locale = null, int? fromRecord = null, int? recordCount = null)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.BET_STATUS] = betStatus;
+            args[Constants.BetfairConstants.EVENT_TYPE_IDS] = eventTypeIds;
+            args[Constants.BetfairConstants.EVENT_IDS] = eventIds;
+            args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
+            args[Constants.BetfairConstants.RUNNER_IDS] = runnerIds;
+            args[Constants.BetfairConstants.BET_IDS] = betIds;
+            args[Constants.BetfairConstants.SIDE] = side;
+            args[Constants.BetfairConstants.SETTLED_DATE_RANGE] = settledDateRange;
+            args[Constants.BetfairConstants.GROUP_BY] = groupBy;
+            args[Constants.BetfairConstants.INCLUDE_ITEM_DESCRIPTION] = includeItemDescription;
+            args[Constants.BetfairConstants.LOCALE] = locale;
+            args[Constants.BetfairConstants.FROM_RECORD] = fromRecord;
+            args[Constants.BetfairConstants.RECORD_COUNT] = recordCount;
+
+            return await Invoke<ClearedOrderSummaryReport>(Constants.BetfairConstants.LIST_CLEARED_ORDERS_METHOD, args);
+        }
+
+        public async Task<CancelExecutionReport> cancelOrders(string marketId, IList<CancelInstruction> instructions, string customerRef)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.MARKET_ID] = marketId;
+            args[Constants.BetfairConstants.INSTRUCTIONS] = instructions;
+            args[Constants.BetfairConstants.CUSTOMER_REFERENCE] = customerRef;
+
+            return await Invoke<CancelExecutionReport>(Constants.BetfairConstants.CANCEL_ORDERS_METHOD, args);
+        }
+
+        public async Task<ReplaceExecutionReport> replaceOrders(String marketId, IList<ReplaceInstruction> instructions, String customerRef)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.MARKET_ID] = marketId;
+            args[Constants.BetfairConstants.INSTRUCTIONS] = instructions;
+            args[Constants.BetfairConstants.CUSTOMER_REFERENCE] = customerRef;
+
+            return await Invoke<ReplaceExecutionReport>(Constants.BetfairConstants.REPLACE_ORDERS_METHOD, args);
+        }
+
+        public async Task<UpdateExecutionReport> updateOrders(String marketId, IList<UpdateInstruction> instructions, String customerRef)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.MARKET_ID] = marketId;
+            args[Constants.BetfairConstants.INSTRUCTIONS] = instructions;
+            args[Constants.BetfairConstants.CUSTOMER_REFERENCE] = customerRef;
+
+            return await Invoke<UpdateExecutionReport>(Constants.BetfairConstants.UPDATE_ORDERS_METHOD, args);
+        }
+
+
+        public async Task<IList<MarketTypeResult>> listMarketTypes(MarketFilter marketFilter, string stringLocale)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.FILTER] = marketFilter;
+            args[Constants.BetfairConstants.LOCALE] = stringLocale;
+            return await Invoke<List<MarketTypeResult>>(Constants.BetfairConstants.LIST_MARKET_TYPES_METHOD, args);
+
+        }
+
+        public async Task<T> Invoke<T>(string method, IDictionary<string, object> args)
+        {
+            // init result
+            // T result = new T();
+
+            if (method == null)
+                throw new ArgumentNullException("method");
+            if (method.Length == 0)
+                throw new ArgumentException(null, "method");
+
+            var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
+
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
+
+            var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
+            if (appKey == null)
+                throw new System.Exception("AppKey should not be null here. This exception should never be raised.");
+            
+            requestMessage.AddBaseHeaders(appKey);
+
+            // if there is an auth token I add it, otherwhise no.
+            if(AuthToken != null)
+                requestMessage.AddAuthHeader(AuthToken);
+
+            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
+            requestMessage.Content = postData;
+
+            Console.WriteLine("\nCalling: " + method + " With args: " + postData);
+            HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
+            if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                try
+                {
+                    string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    return JsonConvert.Deserialize<T>(httpResponseBody);
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw new HttpRequestException(e.Message);
+                }
+            }
+            else
+            {
+                string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
+                throw new HttpRequestException(errorMessage);
+            }
+        }
 
 
         public async Task<BetfairLoginResponse> Login()
@@ -93,7 +225,7 @@ namespace bf_bot
             var bf_password = _betfairSettings?.BetfairLoginCredentials?.Password;
 
             if (bf_username == null || bf_password == null)
-                throw new Exception("Cannot read username or password from config file. This exception should never happen.");
+                throw new System.Exception("Username or Password should not be null here. This exception should never happen.");
 
             var content = new FormUrlEncodedContent(new[]
             {
@@ -105,7 +237,7 @@ namespace bf_bot
 
             var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
             if (appKey == null)
-                throw new Exception("AppKey should not be null here. This exception should never be raised.");
+                throw new System.Exception("AppKey should not be null here. This exception should never be raised.");
 
             requestMessage.AddBaseHeaders(appKey);
             requestMessage.Content = content;
@@ -119,7 +251,7 @@ namespace bf_bot
                 {
                     var jres = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
                     if (jres == null)
-                        throw new Exception("Error while deserializing object.");
+                        throw new System.Exception("Error while deserializing object.");
                     result = jres;
 
                     if(result.Status == "SUCCESS")
@@ -133,7 +265,7 @@ namespace bf_bot
                         result.IsOk = false;
                     }
                 }
-                catch (Exception e)
+                catch (System.Exception e)
                 {
                     Console.WriteLine(e);
                 }
