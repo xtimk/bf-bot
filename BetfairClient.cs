@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.Json;
 using bf_bot.Extensions;
 using bf_bot.TO;
-using bf_bot.Constants;
 using bf_bot.Json;
 
 namespace bf_bot
@@ -29,7 +28,6 @@ namespace bf_bot
             args[Constants.BetfairConstants.FILTER] = marketFilter;
             args[Constants.BetfairConstants.LOCALE] = locale;
             return await Invoke<List<EventTypeResult>>(Constants.BetfairConstants.LIST_EVENT_TYPES_METHOD, args);
-
         }
 
         public async Task<IList<MarketCatalogue>> listMarketCatalogue(MarketFilter marketFilter, ISet<MarketProjection> marketProjections, MarketSort marketSort, string maxResult = "1", string locale = null)
@@ -176,7 +174,7 @@ namespace bf_bot
 
             var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
 
-            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
+            HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, restEndpoint);
 
             var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
             if (appKey == null)
