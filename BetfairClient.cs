@@ -21,11 +21,11 @@ namespace bf_bot
             }
             else
             {
-                throw new ArgumentNullException();
+                throw new ArgumentNullException("Cannot read some of the props setted in the appsetting.json file.");
             }
         }
 
-        public async Task<T> Invoke<T>(string method, IDictionary<string, object> args = null) where T : BetfairApiResult, new()
+        public async Task<T> Invoke<T>(string method, IDictionary<string, object> args) where T : BetfairApiResult, new()
         {
             // init result
             T result = new T();
@@ -38,8 +38,14 @@ namespace bf_bot
             var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
-            requestMessage.AddBaseHeaders(_betfairSettings.BetfairLoginCredentials.AppKey);
+
+            var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
+            if (appKey == null)
+                throw new Exception("AppKey should not be null here. This exception should never be raised.");
             
+            requestMessage.AddBaseHeaders(appKey);
+
+            // if there is an auth token I add it, otherwhise no.
             if(AuthToken != null)
                 requestMessage.AddAuthHeader(AuthToken);
 
@@ -55,7 +61,12 @@ namespace bf_bot
                     string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
                     if(httpResponseBody == null)
                         throw new HttpRequestException();
-                    result = JsonSerializer.Deserialize<T>(httpResponseBody);
+
+                    var jres = JsonSerializer.Deserialize<T>(httpResponseBody);
+                    if (jres == null)
+                        throw new Exception("Error while deserializing object.");
+                    result = jres;
+                       
                     result.IsOk = true;
                     result.HttpResponseMessage = httpResponse;
                     return result;
@@ -67,7 +78,6 @@ namespace bf_bot
                     result.HttpResponseMessage = httpResponse;
                     return result;
                 }
-
             }
             else
             {
@@ -84,14 +94,25 @@ namespace bf_bot
                 IsOk = false
             };
 
+            var bf_username = _betfairSettings?.BetfairLoginCredentials?.Username;
+            var bf_password = _betfairSettings?.BetfairLoginCredentials?.Password;
+
+            if (bf_username == null || bf_password == null)
+                throw new Exception("Cannot read username or password from config file. This exception should never happen.");
+
             var content = new FormUrlEncodedContent(new[]
             {
-                new KeyValuePair<string, string>("username", _betfairSettings?.BetfairLoginCredentials?.Username),
-                new KeyValuePair<string, string>("password", _betfairSettings?.BetfairLoginCredentials?.Password)
+                new KeyValuePair<string, string>("username", bf_username),
+                new KeyValuePair<string, string>("password", bf_password)
             });
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, _betfairSettings?.BetfairEndpoints?.AuthEndpoint);
-            requestMessage.AddBaseHeaders(_betfairSettings.BetfairLoginCredentials.AppKey);
+
+            var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
+            if (appKey == null)
+                throw new Exception("AppKey should not be null here. This exception should never be raised.");
+
+            requestMessage.AddBaseHeaders(appKey);
             requestMessage.Content = content;
 
             HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
@@ -101,11 +122,14 @@ namespace bf_bot
                 string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
                 try
                 {
-                    result = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
+                    var jres = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
+                    if (jres == null)
+                        throw new Exception("Error while deserializing object.");
+                    result = jres;
 
                     if(result.Status == "SUCCESS")
                     {
-                        AuthToken = result?.Token;
+                        AuthToken = result.Token;
                         result.HttpResponseMessage = httpResponse;
                         result.IsOk = true;
                     }

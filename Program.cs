@@ -11,9 +11,8 @@ var loginResult = await client.Login();
 if(loginResult.IsOk)
 {
     Console.WriteLine("Successfully logged in.");
-    Console.WriteLine("Response details: ");
-    Console.WriteLine(Utility.PrettyJsonObject(loginResult));
-
+    // Console.WriteLine("Response details: ");
+    // Console.WriteLine(Utility.PrettyJsonObject(loginResult));
     Console.WriteLine("\n\nAuth Token: " + client.AuthToken);
 }
 else
