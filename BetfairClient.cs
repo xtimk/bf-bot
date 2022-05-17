@@ -4,6 +4,7 @@ using bf_bot.Extensions;
 using bf_bot.TO;
 using bf_bot.Json;
 using Microsoft.Extensions.Logging;
+using bf_bot.Exceptions;
 
 namespace bf_bot
 {
@@ -38,7 +39,7 @@ namespace bf_bot
             var args = new Dictionary<string, object>();
             args[Constants.BetfairConstants.FILTER] = marketFilter;
             args[Constants.BetfairConstants.MARKET_PROJECTION] = marketProjections;
-            args[Constants.BetfairConstants.SORT] = marketSort;
+            args[Constants.BetfairConstants.SORT] = JsonConvert.Serialize<MarketSort>(marketSort).Replace("\u0022", "");
             args[Constants.BetfairConstants.MAX_RESULTS] = maxResult;
             args[Constants.BetfairConstants.LOCALE] = locale;
             return await Invoke<List<MarketCatalogue>>(Constants.BetfairConstants.LIST_MARKET_CATALOGUE_METHOD, args);
@@ -195,7 +196,9 @@ namespace bf_bot
                 _logger.LogWarning("The authentication token is not configured.");
             }
 
-            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args) + "}", Encoding.UTF8, "application/json");
+            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args), Encoding.UTF8, "application/json");
+            // var postData = JsonConvert.Serialize<IDictionary<string, object>>(args) + "}";
+            
             requestMessage.Content = postData;
 
             _logger.LogDebug("Calling method <" + method + "> With args: " + postData.ReadAsStringAsync().Result);
@@ -217,10 +220,11 @@ namespace bf_bot
             else
             {
                 string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
-                _logger.LogError(errorMessage);
-                _logger.LogError(httpResponse.Content.ToString());
                 string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                throw ReconstituteException(JsonConvert.Deserialize<bf_bot.TO.Exception>(httpResponseBody));
+                _logger.LogError(errorMessage);
+                _logger.LogError(httpResponseBody);
+                // throw ReconstituteException(JsonConvert.Deserialize<bf_bot.TO.Exception>(httpResponseBody));
+                throw new BetfairClientException(_logger, errorMessage);
             }
         }
 
