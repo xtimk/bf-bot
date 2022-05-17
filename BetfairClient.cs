@@ -5,6 +5,7 @@ using bf_bot.TO;
 using bf_bot.Json;
 using Microsoft.Extensions.Logging;
 using bf_bot.Exceptions;
+using System.ComponentModel;
 
 namespace bf_bot
 {
@@ -13,16 +14,28 @@ namespace bf_bot
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
         private readonly ILogger _logger;
-        public BetfairClient(BetfairClientInitializer _betfairSettings, ILogger logger)
+        private readonly ILoggerFactory _loggerFactory;
+        public void Init(BetfairClientInitializer betfairSettings)
         {
-            _logger = logger;
-            if(Utility.AreAllPropNotNull(_betfairSettings))
+            _logger.LogInformation("Initializing client.");
+            if(Utility.AreAllPropNotNull(betfairSettings))
             {
-                this._betfairSettings = _betfairSettings;
+                _betfairSettings = betfairSettings;
             }
-            else
+        }
+        public BetfairClient(ILoggerFactory loggerFactory)
+        {
+            _loggerFactory = loggerFactory;
+            _logger = _loggerFactory.CreateLogger<BetfairClient>();
+        }
+
+        public BetfairClient(ILoggerFactory loggerFactory, BetfairClientInitializer betfairSettings)
+        {
+            _loggerFactory = loggerFactory;
+            _logger = _loggerFactory.CreateLogger<BetfairClient>();
+            if(Utility.AreAllPropNotNull(betfairSettings))
             {
-                throw new ArgumentNullException("Cannot read some of the props setted in the appsetting.json file.");
+                _betfairSettings = betfairSettings;
             }
         }
 

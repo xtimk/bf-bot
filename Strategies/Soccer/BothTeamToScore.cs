@@ -12,12 +12,12 @@ namespace bf_bot.Strategies.Soccer
 {
     public class BothTeamToScore : IStrategy
     {
-        private readonly IClient _client;
+        private IClient _client;
         private readonly ILogger _logger;
         private bool _active = false;
-        public BothTeamToScore(IClient client, ILogger logger)
+        public BothTeamToScore(IClient client, ILoggerFactory loggerFactory)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger<BothTeamToScore>();
             _client = client;
         }
 
@@ -59,13 +59,36 @@ namespace bf_bot.Strategies.Soccer
 
         public async Task DoStrategy()
         {
-            var soccerEventIds = await GetSoccerEventTypes();
+            while(_active)
+            {
+                Thread.Sleep(3000);
+                var soccerEventIds = await GetSoccerEventTypes();
 
-            var marketCatalogues = await GetNextGamesMarketCatalogues(soccerEventIds);
+                var marketCatalogues = await GetNextGamesMarketCatalogues(soccerEventIds);
 
-            var marketBooks = await GetMarketBooks(marketCatalogues);
+                var marketBooks = await GetMarketBooks(marketCatalogues);
 
-            marketBooks = FilterOpenMarketBooks(marketBooks);
+                marketBooks = FilterOpenMarketBooks(marketBooks);
+                if (marketBooks.Count() == 0)
+                {
+                    _logger.LogDebug("No open market found.");
+                    continue;
+                }
+
+                var condition = new MarketBookFilterCondition{
+                    MaxPrice = 3,
+                    MinPrice = 1.5,
+                    MinSize = 10
+                };
+
+                marketBooks = FilterMarketBooksByCondition(marketBooks, condition);
+                if (marketBooks.Count() == 0)
+                {
+                    _logger.LogDebug("No marketbooks matching the conditions,");
+                    continue;
+                }
+                _logger.LogDebug("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
+            }
         }
 
         public async Task<ISet<string>> GetSoccerEventTypes()
@@ -115,9 +138,28 @@ namespace bf_bot.Strategies.Soccer
             return marketIds.ToList();
         }
 
-        public List<MarketBook> FilterMarketBooksByPrice(List<MarketBook> marketBooks)
+        public List<MarketBook> FilterMarketBooksByCondition(List<MarketBook> marketBooks, MarketBookFilterCondition condition)
         {
-            return marketBooks;
+            var filteredMarketBooks = new List<MarketBook>();
+            foreach (var item in marketBooks)
+            {
+                try
+                {
+                    var filteredList = item.Runners[0].ExchangePrices.AvailableToBack
+                        .Where(
+                            x => x.Price < condition.MaxPrice && 
+                            x.Price > condition.MinPrice && 
+                            x.Size > condition.MinSize
+                        );
+                    if (filteredList.Count() > 0)
+                        filteredMarketBooks.Add(item);
+                }
+                catch (System.Exception)
+                {
+                    _logger.LogDebug("No ExchangePrices found for item " + JsonConvert.Serialize<MarketBook>(item));
+                }
+            }
+            return filteredMarketBooks;
         }
 
         public List<MarketBook> FilterOpenMarketBooks(List<MarketBook> marketBooks)

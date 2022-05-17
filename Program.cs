@@ -2,27 +2,39 @@
 using bf_bot;
 using bf_bot.Strategies.Soccer;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
-
-using var loggerFactory = LoggerFactory.Create(builder =>
-{
+var serviceProvider = new ServiceCollection().AddLogging(builder => {
     builder
         .SetMinimumLevel(LogLevel.Trace)
-        // .AddFilter("Default", LogLevel.Trace)
         .AddSimpleConsole( options => {
             options.IncludeScopes = true;
             options.SingleLine = true;
             options.TimestampFormat = "dd/mm/yyyy hh:mm:ss ";
         });
-});
-ILogger logger = loggerFactory.CreateLogger<Program>();
+    })
+    .AddSingleton<BetfairClientInitializer>()
+    .AddScoped<IClient, BetfairClient>(provider => new BetfairClient(provider.GetRequiredService<ILoggerFactory>(), Utility.CreateInitializer()))
+    .AddScoped<IStrategy, BothTeamToScore>(provider => new BothTeamToScore(provider.GetRequiredService<IClient>(), provider.GetRequiredService<ILoggerFactory>()))
+    .BuildServiceProvider();
+    
+// serviceProvider.GetService<ILoggerFactory>();
 
-var initializer = Utility.CreateInitializer();
+// var bfClient = serviceProvider.GetService<IClient>();
 
-var client = new BetfairClient(initializer, logger);
+// serviceProvider.GetService<IClient>().Init(Utility.CreateInitializer());
 
-var bothTeamToScoreStrategy = new BothTeamToScore(client, logger);
+// var initializer = Utility.CreateInitializer();
+// bfClient.Init(initializer);
 
-await bothTeamToScoreStrategy.Start();
+var btScoreStrategy = serviceProvider.GetService<IStrategy>();
+await btScoreStrategy.Start();
 
-logger.LogInformation("Program terminated.");
+
+// var client = new BetfairClient(initializer, loggerFactory);
+
+// var bothTeamToScoreStrategy = new BothTeamToScore(client, logger);
+
+// await bothTeamToScoreStrategy.Start();
+
+// logger.LogInformation("Program terminated.");

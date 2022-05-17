@@ -4,6 +4,7 @@ namespace bf_bot
 {
     public interface IClient
     {
+        void Init(BetfairClientInitializer betfairSettings);
         /**
         * calls indentitysso for authenticating user and sets session token
         * 
