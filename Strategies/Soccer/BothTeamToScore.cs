@@ -82,7 +82,7 @@ namespace bf_bot.Strategies.Soccer
                 marketBooks = FilterMarketBooksByCondition(marketBooks, condition);
                 if (marketBooks.Count() == 0)
                 {
-                    _logger.LogInformation("No marketbooks matching the conditions. Will retry in a moment.");
+                    _logger.LogInformation("No marketbooks matching the strategy conditions. Will retry in a moment.");
                     continue;
                 }
                 _logger.LogTrace("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
