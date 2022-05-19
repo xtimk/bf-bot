@@ -76,7 +76,7 @@ namespace bf_bot.Strategies.Soccer
 
                 var condition = new MarketBookFilterCondition{
                     MaxPrice = 3,
-                    MinPrice = 1,
+                    MinPrice = 1.7,
                     MinSize = 10
                 };
 
@@ -86,7 +86,8 @@ namespace bf_bot.Strategies.Soccer
                     _logger.LogInformation("No marketbooks matching the conditions. Will retry in a moment.");
                     continue;
                 }
-                _logger.LogInformation("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
+                _logger.LogTrace("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
+                _logger.LogInformation("First marketbook matching conditions: " + JsonConvert.Serialize<MarketBook>(marketBooks.First()));
             }
         }
 

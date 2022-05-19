@@ -181,9 +181,6 @@ namespace bf_bot
 
         public async Task<T> Invoke<T>(string method, IDictionary<string, object> args)
         {
-            // init result
-            // T result = new T();
-
             if (method == null)
                 throw new ArgumentNullException("method");
             if (method.Length == 0)
@@ -195,7 +192,10 @@ namespace bf_bot
 
             var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
             if (appKey == null)
+            {
+                _logger.LogCritical("AppKey has not been configured.");
                 throw new System.Exception("AppKey should not be null here. This exception should never be raised.");
+            }
             
             requestMessage.AddBaseHeaders(appKey);
 
@@ -206,7 +206,8 @@ namespace bf_bot
             }
             else
             {
-                _logger.LogWarning("The authentication token is not configured.");
+                _logger.LogCritical("The authentication token has not been configured.");
+                throw new System.Exception("The authentication token is not configured.");
             }
 
             JsonSerializerOptions options = new()
@@ -230,13 +231,13 @@ namespace bf_bot
                 }
                 catch (System.Exception e)
                 {
-                    _logger.LogError("Error while calling method <" + method + "> with args: " + postData.ReadAsStringAsync().Result, e.Message);
+                    _logger.LogError("Exception while calling method <" + method + "> with args: " + postData.ReadAsStringAsync().Result, e.Message);
                     throw new HttpRequestException(e.Message);
                 }
             }
             else
             {
-                string errorMessage = "Exception when calling method <" + method + ">. Response code <" + httpResponse.StatusCode + "> is not OK.";
+                string errorMessage = "Method <" + method + "> returned <" + httpResponse.StatusCode + ">, which is not OK.";
                 string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
                 _logger.LogError(errorMessage);
                 _logger.LogError(httpResponseBody);
@@ -248,24 +249,23 @@ namespace bf_bot
 
         public async Task<bool> RequestLogin()
         {
-            _logger.LogInformation("Login requested.");
+            _logger.LogInformation("Requested login to betfair account endpoint.");
             var loginResult = await this.Login();
             if(loginResult.IsOk)
             {
                 _logger.LogInformation("Successfully logged in.");
-                _logger.LogInformation("Token: " + AuthToken);
+                _logger.LogDebug("Token: " + AuthToken);
                 return true;
             }
             else
             {
-                _logger.LogWarning("Cant authenticate user.");
+                _logger.LogError("Cant authenticate user. Check user credentials in json file.");
                 _logger.LogDebug(Utility.PrettyJsonObject(loginResult));
                 return false;
             } 
         }
         private async Task<BetfairLoginResponse> Login()
         {
-            _logger.LogInformation("Requested login to betfair.");
             BetfairLoginResponse result = new BetfairLoginResponse
             {
                 IsOk = false
@@ -276,7 +276,7 @@ namespace bf_bot
 
             if (bf_username == null || bf_password == null)
             {
-                _logger.LogError("Username or Password are null. This should never happen.");
+                _logger.LogCritical("Username or Password are null. This should never happen.");
                 throw new System.Exception("Username or Password should not be null here. This exception should never happen.");
             }
 
@@ -291,7 +291,7 @@ namespace bf_bot
             var appKey = _betfairSettings?.BetfairLoginCredentials?.AppKey;
             if (appKey == null)
             {
-                _logger.LogError("AppKey is null. This should never happen.");
+                _logger.LogCritical("AppKey has not been configured.");
                 throw new System.Exception("AppKey should not be null here. This exception should never be raised.");
             }
 
@@ -307,7 +307,10 @@ namespace bf_bot
                 {
                     var jres = JsonSerializer.Deserialize<BetfairLoginResponse>(httpResponseBody);
                     if (jres == null)
+                    {
+                        _logger.LogError("An error has been encountered while logging in.");
                         throw new System.Exception("Error while deserializing object.");
+                    }
                     result = jres;
 
                     if(result.Status == "SUCCESS")
