@@ -10,7 +10,7 @@ var serviceProvider = new ServiceCollection().AddLogging(builder => {
         .AddSimpleConsole( options => {
             options.IncludeScopes = true;
             options.SingleLine = true;
-            options.TimestampFormat = "dd/mm/yyyy hh:mm:ss ";
+            options.TimestampFormat = "[dd/mm/yyyy hh:mm:ss] ";
         });
     })
     .AddSingleton<BetfairClientInitializer>()
