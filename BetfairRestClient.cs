@@ -13,7 +13,7 @@ namespace bf_bot
     {
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
-        private readonly ILogger _logger;
+        private readonly ILogger<BetfairRestClient> _logger;
         private readonly ILoggerFactory _loggerFactory;
         public void Init(BetfairClientInitializer betfairSettings)
         {

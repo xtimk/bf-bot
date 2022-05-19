@@ -8,7 +8,7 @@ namespace bf_bot.Strategies.Soccer
     public class BothTeamToScore : IStrategy
     {
         private IClient _client;
-        private readonly ILogger _logger;
+        private readonly ILogger<BothTeamToScore> _logger;
         private bool _active = false;
         public BothTeamToScore(IClient client, ILoggerFactory loggerFactory)
         {
@@ -34,15 +34,14 @@ namespace bf_bot.Strategies.Soccer
             {
                 await DoStrategy();
             }
-            catch (BetfairClientException)
+            catch (BetfairClientException e)
             {
-
+                _logger.LogError("A client error has been encountered while executing strategy. Details: " + e.Message);
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
-
+                _logger.LogError("A generic error has been encountered while executing strategy. Details: " + e.Message);
             }
-
             _logger.LogInformation("BothTeamToScore strategy has stopped.");
         }
 
