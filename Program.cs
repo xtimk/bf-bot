@@ -14,7 +14,7 @@ var serviceProvider = new ServiceCollection().AddLogging(builder => {
         });
     })
     .AddSingleton<BetfairClientInitializer>()
-    .AddScoped<IClient, BetfairClient>(provider => new BetfairClient(provider.GetRequiredService<ILoggerFactory>(), Utility.CreateInitializer()))
+    .AddScoped<IClient, BetfairRestClient>(provider => new BetfairRestClient(provider.GetRequiredService<ILoggerFactory>(), Utility.CreateInitializer()))
     .AddScoped<IStrategy, BothTeamToScore>(provider => new BothTeamToScore(provider.GetRequiredService<IClient>(), provider.GetRequiredService<ILoggerFactory>()))
     .BuildServiceProvider();
 

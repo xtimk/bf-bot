@@ -5,11 +5,10 @@ using bf_bot.TO;
 using bf_bot.Json;
 using Microsoft.Extensions.Logging;
 using bf_bot.Exceptions;
-using System.Text.Json.Serialization;
 
 namespace bf_bot
 {
-    public class BetfairClient : IClient
+    public class BetfairRpcClientRpc : IClient
     {
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
@@ -23,16 +22,16 @@ namespace bf_bot
                 _betfairSettings = betfairSettings;
             }
         }
-        public BetfairClient(ILoggerFactory loggerFactory)
+        public BetfairRpcClientRpc(ILoggerFactory loggerFactory)
         {
             _loggerFactory = loggerFactory;
-            _logger = _loggerFactory.CreateLogger<BetfairClient>();
+            _logger = _loggerFactory.CreateLogger<BetfairRpcClientRpc>();
         }
 
-        public BetfairClient(ILoggerFactory loggerFactory, BetfairClientInitializer betfairSettings)
+        public BetfairRpcClientRpc(ILoggerFactory loggerFactory, BetfairClientInitializer betfairSettings)
         {
             _loggerFactory = loggerFactory;
-            _logger = _loggerFactory.CreateLogger<BetfairClient>();
+            _logger = _loggerFactory.CreateLogger<BetfairRpcClientRpc>();
             if(Utility.AreAllPropNotNull(betfairSettings))
             {
                 _betfairSettings = betfairSettings;
@@ -62,7 +61,7 @@ namespace bf_bot
         {
             var args = new Dictionary<string, object>();
             args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
-            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;
+            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;// JsonConvert.Serialize<PriceProjection>(priceProjection); // .Replace("\u0022", "");
             args[Constants.BetfairConstants.ORDER_PROJECTION] = orderProjection;
             args[Constants.BetfairConstants.MATCH_PROJECTION] = matchProjection;
             args[Constants.BetfairConstants.LOCALE] = locale;
@@ -189,7 +188,7 @@ namespace bf_bot
             if (method.Length == 0)
                 throw new ArgumentException(null, "method");
 
-            var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + method + "/";
+            var restEndpoint = _betfairSettings?.BetfairEndpoints?.BettingEndpoint + "SportsAPING/v1.0/";
 
             HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Post, restEndpoint);
 
@@ -209,16 +208,17 @@ namespace bf_bot
                 _logger.LogWarning("The authentication token is not configured.");
             }
 
-            JsonSerializerOptions options = new()
-            {
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
+            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args), Encoding.UTF8, "application/json");
+            var call = new JsonRequest { Method = method, Id = 1, Params = args };
 
-            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args, options), Encoding.UTF8, "application/json");
+            var xd = JsonConvert.Serialize<JsonRequest>(call);
+            var postData2 = new StringContent(xd, Encoding.UTF8, "application/json");
+
+            // var postData = JsonConvert.Serialize<IDictionary<string, object>>(args) + "}";
             
-            requestMessage.Content = postData;
+            requestMessage.Content = postData2;
 
-            _logger.LogDebug("Calling method <" + method + "> With args: " + postData.ReadAsStringAsync().Result);
+            _logger.LogDebug("Calling method <" + method + "> With args: " + postData2.ReadAsStringAsync().Result);
 
             HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
             if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
@@ -230,7 +230,7 @@ namespace bf_bot
                 }
                 catch (System.Exception e)
                 {
-                    _logger.LogError("Error while calling method <" + method + "> with args: " + postData.ReadAsStringAsync().Result, e.Message);
+                    _logger.LogError("Error while calling method <" + method + ">. Value returned is " + httpResponse.Content.ReadAsStringAsync().ToString());
                     throw new HttpRequestException(e.Message);
                 }
             }
