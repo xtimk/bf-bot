@@ -5,6 +5,7 @@ using bf_bot.TO;
 using bf_bot.Json;
 using Microsoft.Extensions.Logging;
 using bf_bot.Exceptions;
+using System.Text.Json.Serialization;
 
 namespace bf_bot
 {
@@ -51,7 +52,7 @@ namespace bf_bot
             var args = new Dictionary<string, object>();
             args[Constants.BetfairConstants.FILTER] = marketFilter;
             args[Constants.BetfairConstants.MARKET_PROJECTION] = marketProjections;
-            args[Constants.BetfairConstants.SORT] = JsonConvert.Serialize<MarketSort>(marketSort).Replace("\u0022", "");
+            args[Constants.BetfairConstants.SORT] = marketSort; // JsonConvert.Serialize<MarketSort>(marketSort).Replace("\u0022", "");
             args[Constants.BetfairConstants.MAX_RESULTS] = maxResult;
             args[Constants.BetfairConstants.LOCALE] = locale;
             return await Invoke<List<MarketCatalogue>>(Constants.BetfairConstants.LIST_MARKET_CATALOGUE_METHOD, args);
@@ -61,7 +62,7 @@ namespace bf_bot
         {
             var args = new Dictionary<string, object>();
             args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
-            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;
+            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;// JsonConvert.Serialize<PriceProjection>(priceProjection); // .Replace("\u0022", "");
             args[Constants.BetfairConstants.ORDER_PROJECTION] = orderProjection;
             args[Constants.BetfairConstants.MATCH_PROJECTION] = matchProjection;
             args[Constants.BetfairConstants.LOCALE] = locale;
@@ -208,7 +209,14 @@ namespace bf_bot
                 _logger.LogWarning("The authentication token is not configured.");
             }
 
-            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args), Encoding.UTF8, "application/json");
+            JsonSerializerOptions options = new()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            var serializedThing = JsonConvert.Serialize<IDictionary<string, object>>(args); //JsonSerializer.Serialize<IDictionary<string, object>>(args, options);
+
+            var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args, options), Encoding.UTF8, "application/json");
             // var postData = JsonConvert.Serialize<IDictionary<string, object>>(args) + "}";
             
             requestMessage.Content = postData;
@@ -248,6 +256,7 @@ namespace bf_bot
             if(loginResult.IsOk)
             {
                 _logger.LogInformation("Successfully logged in.");
+                _logger.LogInformation("Token: " + AuthToken);
                 return true;
             }
             else
