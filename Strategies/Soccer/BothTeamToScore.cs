@@ -57,9 +57,12 @@ namespace bf_bot.Strategies.Soccer
             while(_active)
             {
                 Thread.Sleep(3000);
+
                 var soccerEventIds = await GetSoccerEventTypes();
 
                 var marketCatalogues = await GetNextGamesMarketCatalogues(soccerEventIds);
+
+                marketCatalogues = FilterBothTeamToScore(marketCatalogues);                
 
                 var marketBooks = await GetMarketBooks(marketCatalogues);
                 _logger.LogTrace(JsonConvert.Serialize<List<MarketBook>>(marketBooks));
@@ -67,17 +70,15 @@ namespace bf_bot.Strategies.Soccer
                 marketBooks = FilterOpenMarketBooks(marketBooks);
                 if (marketBooks.Count() == 0)
                 {
-                    _logger.LogDebug("No open market found.");
+                    _logger.LogInformation("No open market found. Will retry in a moment.");
                     continue;
                 }
 
                 var condition = new MarketBookFilterCondition{
                     MaxPrice = 3,
-                    MinPrice = 1.5,
+                    MinPrice = 1,
                     MinSize = 10
                 };
-
-                // var marketRunners = await GetRunnerBooks(marketBooks);
 
                 marketBooks = FilterMarketBooksByCondition(marketBooks, condition);
                 if (marketBooks.Count() == 0)
@@ -85,15 +86,13 @@ namespace bf_bot.Strategies.Soccer
                     _logger.LogInformation("No marketbooks matching the conditions. Will retry in a moment.");
                     continue;
                 }
-                _logger.LogDebug("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
+                _logger.LogInformation("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
             }
         }
 
-        public async Task<List<MarketBook>> GetRunnerBooks(List<MarketBook> marketBooks)
+        public List<MarketCatalogue> FilterBothTeamToScore(List<MarketCatalogue> marketCatalogues)
         {
-            var result = new List<MarketBook>();
-            
-            return marketBooks;
+            return marketCatalogues.Where(x => x.MarketName == "Both teams to Score?").ToList();
         }
 
         public async Task<ISet<string>> GetSoccerEventTypes()
@@ -114,33 +113,28 @@ namespace bf_bot.Strategies.Soccer
 
         public async Task<List<MarketCatalogue>> GetNextGamesMarketCatalogues(ISet<string> eventypeIds)
         {
-            //ListMarketCatalogue: Get next available horse races, parameters:
+            //Set a timerange where to search
             var time = new TimeRange();
             time.From = DateTime.Now.AddHours(-1);
             time.To = DateTime.Now.AddDays(1);
-
             var marketFilter = new MarketFilter();
             marketFilter.EventTypeIds = eventypeIds;
             marketFilter.MarketStartTime = time;
-            // marketFilter.MarketCountries = new HashSet<string>() { "GB" };
-            // marketFilter.MarketTypeCodes = new HashSet<String>() { "WIN" };
-
             var marketSort = MarketSort.FIRST_TO_START;
-            var maxResults = "5";
+            var maxResults = "100";
             
-            //request runner metadata 
             ISet<MarketProjection> marketProjections = new HashSet<MarketProjection>();
-            // marketProjections.Add(MarketProjection.EVENT);
+            marketProjections.Add(MarketProjection.EVENT_TYPE);
+            marketProjections.Add(MarketProjection.EVENT);
+            marketProjections.Add(MarketProjection.COMPETITION);
 
-            _logger.LogInformation("Getting the next available soccer market");
+            _logger.LogInformation("Getting the next " + maxResults + " available soccer markets");
 
             var marketCatalogues = await _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults);
+
             _logger.LogTrace(JsonConvert.Serialize<IList<MarketCatalogue>>(marketCatalogues));
 
-            // get marketids of Goal-Goal markets.            
-            // var marketIds = marketCatalogues.Where(x => x.MarketName == "Both teams to Score?");
-            var marketIds = marketCatalogues;
-            return marketIds.ToList();
+            return marketCatalogues.ToList();
         }
 
         public List<MarketBook> FilterMarketBooksByCondition(List<MarketBook> marketBooks, MarketBookFilterCondition condition)
@@ -174,10 +168,10 @@ namespace bf_bot.Strategies.Soccer
         public async Task<List<MarketBook>> GetMarketBooks(List<MarketCatalogue> marketCatalogues)
         {
             var listToReturn = new List<string>();
-            ISet<PriceData> priceData = new HashSet<PriceData>();
-            //get all prices from the exchange
-            priceData.Add(PriceData.EX_BEST_OFFERS);
 
+            ISet<PriceData> priceData = new HashSet<PriceData>();
+            priceData.Add(PriceData.EX_BEST_OFFERS);
+            
             var priceProjection = new PriceProjection();
             priceProjection.PriceData = priceData;
 

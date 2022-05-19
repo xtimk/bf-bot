@@ -62,7 +62,7 @@ namespace bf_bot
         {
             var args = new Dictionary<string, object>();
             args[Constants.BetfairConstants.MARKET_IDS] = marketIds;
-            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;// JsonConvert.Serialize<PriceProjection>(priceProjection); // .Replace("\u0022", "");
+            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;
             args[Constants.BetfairConstants.ORDER_PROJECTION] = orderProjection;
             args[Constants.BetfairConstants.MATCH_PROJECTION] = matchProjection;
             args[Constants.BetfairConstants.LOCALE] = locale;
@@ -214,10 +214,7 @@ namespace bf_bot
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
 
-            var serializedThing = JsonConvert.Serialize<IDictionary<string, object>>(args); //JsonSerializer.Serialize<IDictionary<string, object>>(args, options);
-
             var postData = new StringContent(JsonSerializer.Serialize<IDictionary<string, object>>(args, options), Encoding.UTF8, "application/json");
-            // var postData = JsonConvert.Serialize<IDictionary<string, object>>(args) + "}";
             
             requestMessage.Content = postData;
 
