@@ -62,6 +62,7 @@ namespace bf_bot.Strategies.Soccer
                 var marketCatalogues = await GetNextGamesMarketCatalogues(soccerEventIds);
 
                 var marketBooks = await GetMarketBooks(marketCatalogues);
+                _logger.LogTrace(JsonConvert.Serialize<List<MarketBook>>(marketBooks));
 
                 marketBooks = FilterOpenMarketBooks(marketBooks);
                 if (marketBooks.Count() == 0)
@@ -76,6 +77,8 @@ namespace bf_bot.Strategies.Soccer
                     MinSize = 10
                 };
 
+                // var marketRunners = await GetRunnerBooks(marketBooks);
+
                 marketBooks = FilterMarketBooksByCondition(marketBooks, condition);
                 if (marketBooks.Count() == 0)
                 {
@@ -84,6 +87,13 @@ namespace bf_bot.Strategies.Soccer
                 }
                 _logger.LogDebug("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
             }
+        }
+
+        public async Task<List<MarketBook>> GetRunnerBooks(List<MarketBook> marketBooks)
+        {
+            var result = new List<MarketBook>();
+            
+            return marketBooks;
         }
 
         public async Task<ISet<string>> GetSoccerEventTypes()
@@ -116,20 +126,20 @@ namespace bf_bot.Strategies.Soccer
             // marketFilter.MarketTypeCodes = new HashSet<String>() { "WIN" };
 
             var marketSort = MarketSort.FIRST_TO_START;
-            var maxResults = "200";
+            var maxResults = "5";
             
             //request runner metadata 
             ISet<MarketProjection> marketProjections = new HashSet<MarketProjection>();
-            marketProjections.Add(MarketProjection.EVENT);
-            marketProjections.Add(MarketProjection.COMPETITION);
+            // marketProjections.Add(MarketProjection.EVENT);
 
             _logger.LogInformation("Getting the next available soccer market");
 
             var marketCatalogues = await _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults);
-            _logger.LogDebug(JsonConvert.Serialize<IList<MarketCatalogue>>(marketCatalogues));
+            _logger.LogTrace(JsonConvert.Serialize<IList<MarketCatalogue>>(marketCatalogues));
 
             // get marketids of Goal-Goal markets.            
-            var marketIds = marketCatalogues.Where(x => x.MarketName == "Both teams to Score?");
+            // var marketIds = marketCatalogues.Where(x => x.MarketName == "Both teams to Score?");
+            var marketIds = marketCatalogues;
             return marketIds.ToList();
         }
 
@@ -172,12 +182,9 @@ namespace bf_bot.Strategies.Soccer
             priceProjection.PriceData = priceData;
 
             var marketBook = await _client.listMarketBook(marketCatalogues.Select(x => x.MarketId).ToList(), priceProjection);
-            _logger.LogDebug(JsonConvert.Serialize<IList<MarketBook>>(marketBook));
-
-            var activeMarketBook = marketBook.Where(x => x.Status == MarketStatus.OPEN).ToList();
-            _logger.LogDebug(JsonConvert.Serialize<IList<MarketBook>>(activeMarketBook));
+            _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(marketBook));
             
-            return activeMarketBook;
+            return marketBook.ToList();
         }
     }
 }

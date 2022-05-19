@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 var serviceProvider = new ServiceCollection().AddLogging(builder => {
     builder
-        .SetMinimumLevel(LogLevel.Trace)
+        .SetMinimumLevel(LogLevel.Debug)
         .AddSimpleConsole( options => {
             options.IncludeScopes = true;
             options.SingleLine = true;
