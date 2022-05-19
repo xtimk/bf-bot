@@ -1,2 +1,4 @@
-# bf-bot
-Betfair bot written in c#
+# Betfair automated betting system
+Betfair bot written in `C#`
+
+Work in progress.
