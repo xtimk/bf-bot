@@ -9,7 +9,7 @@ var runningMode = RunningMode.TEST;
 
 var serviceProvider = new ServiceCollection().AddLogging(builder => {
     builder
-        .SetMinimumLevel(LogLevel.Trace)
+        .SetMinimumLevel(LogLevel.Information)
         .AddSimpleConsole( options => {
             options.IncludeScopes = true;
             options.SingleLine = true;

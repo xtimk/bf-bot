@@ -30,6 +30,7 @@ namespace bf_bot.Strategies.Soccer
         public async Task Start()
         {
             _logger.LogInformation("Starting BothTeamToScore strategy.");
+            _logger.LogInformation("Running Mode: " + _mode);
 
             // first of all authenticate the client.
             var logged_in = await _client.RequestLogin();
@@ -89,7 +90,6 @@ namespace bf_bot.Strategies.Soccer
                     _logger.LogInformation("No marketbooks matching the strategy conditions. Will retry in a moment.");
                     continue;
                 }
-                _logger.LogInformation("First marketbook matching conditions: " + JsonConvert.Serialize<MarketBook>(marketBooks.First()));
 
                 var marketBookToBet = SelectOneMarketBook(marketBooks);
             }
@@ -157,6 +157,7 @@ namespace bf_bot.Strategies.Soccer
             {
                 try
                 {
+                    // get first runner available to back = Bet on Both Teams to Score yes.
                     var filteredList = item.Runners[0].ExchangePrices.AvailableToBack
                         .Where(
                             x => x.Price < condition.MaxPrice && 
