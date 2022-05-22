@@ -3,10 +3,13 @@ using bf_bot;
 using bf_bot.Strategies.Soccer;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using bf_bot.Constants;
+
+var runningMode = RunningMode.TEST;
 
 var serviceProvider = new ServiceCollection().AddLogging(builder => {
     builder
-        .SetMinimumLevel(LogLevel.Information)
+        .SetMinimumLevel(LogLevel.Trace)
         .AddSimpleConsole( options => {
             options.IncludeScopes = true;
             options.SingleLine = true;
@@ -15,7 +18,7 @@ var serviceProvider = new ServiceCollection().AddLogging(builder => {
     })
     .AddSingleton<BetfairClientInitializer>()
     .AddScoped<IClient, BetfairRestClient>(provider => new BetfairRestClient(provider.GetRequiredService<ILoggerFactory>(), Utility.CreateInitializer()))
-    .AddScoped<IStrategy, BothTeamToScore>(provider => new BothTeamToScore(provider.GetRequiredService<IClient>(), provider.GetRequiredService<ILoggerFactory>()))
+    .AddScoped<IStrategy, BothTeamToScore>(provider => new BothTeamToScore(provider.GetRequiredService<IClient>(), provider.GetRequiredService<ILoggerFactory>(), runningMode))
     .BuildServiceProvider();
 
 var btScoreStrategy = serviceProvider.GetService<IStrategy>();

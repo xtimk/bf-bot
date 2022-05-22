@@ -1,3 +1,4 @@
+using bf_bot.Constants;
 using bf_bot.Exceptions;
 using bf_bot.Json;
 using bf_bot.TO;
@@ -7,11 +8,21 @@ namespace bf_bot.Strategies.Soccer
 {
     public class BothTeamToScore : IStrategy
     {
+        private string _marketCatalogueMaxResults = "100";
+        private MarketBookFilterCondition _condition = new() {
+            MaxPrice = 3,
+            MinPrice = 1.7,
+            MinSize = 10
+        };
+
+        private int _timer = 3000;
         private IClient _client;
         private readonly ILogger<BothTeamToScore> _logger;
         private bool _active = false;
-        public BothTeamToScore(IClient client, ILoggerFactory loggerFactory)
+        private readonly RunningMode _mode;
+        public BothTeamToScore(IClient client, ILoggerFactory loggerFactory, RunningMode mode)
         {
+            _mode = mode;
             _logger = loggerFactory.CreateLogger<BothTeamToScore>();
             _client = client;
         }
@@ -55,7 +66,7 @@ namespace bf_bot.Strategies.Soccer
         {
             while(_active)
             {
-                Thread.Sleep(3000);
+                Thread.Sleep(_timer);
 
                 var soccerEventIds = await GetSoccerEventTypes();
 
@@ -64,7 +75,6 @@ namespace bf_bot.Strategies.Soccer
                 marketCatalogues = FilterBothTeamToScore(marketCatalogues);                
 
                 var marketBooks = await GetMarketBooks(marketCatalogues);
-                _logger.LogTrace(JsonConvert.Serialize<List<MarketBook>>(marketBooks));
 
                 marketBooks = FilterOpenMarketBooks(marketBooks);
                 if (marketBooks.Count() == 0)
@@ -73,21 +83,24 @@ namespace bf_bot.Strategies.Soccer
                     continue;
                 }
 
-                var condition = new MarketBookFilterCondition{
-                    MaxPrice = 3,
-                    MinPrice = 1.7,
-                    MinSize = 10
-                };
-
-                marketBooks = FilterMarketBooksByCondition(marketBooks, condition);
+                marketBooks = FilterMarketBooksByCondition(marketBooks, _condition);
                 if (marketBooks.Count() == 0)
                 {
                     _logger.LogInformation("No marketbooks matching the strategy conditions. Will retry in a moment.");
                     continue;
                 }
-                _logger.LogTrace("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(marketBooks));
                 _logger.LogInformation("First marketbook matching conditions: " + JsonConvert.Serialize<MarketBook>(marketBooks.First()));
+
+                var marketBookToBet = SelectOneMarketBook(marketBooks);
             }
+        }
+
+        public MarketBook SelectOneMarketBook(List<MarketBook> marketBooks)
+        {
+            var result = marketBooks.First();
+            _logger.LogTrace(JsonConvert.Serialize<MarketBook>(result));
+
+            return result;
         }
 
         public List<MarketCatalogue> FilterBothTeamToScore(List<MarketCatalogue> marketCatalogues)
@@ -121,7 +134,7 @@ namespace bf_bot.Strategies.Soccer
             marketFilter.EventTypeIds = eventypeIds;
             marketFilter.MarketStartTime = time;
             var marketSort = MarketSort.FIRST_TO_START;
-            var maxResults = "100";
+            var maxResults = _marketCatalogueMaxResults;
             
             ISet<MarketProjection> marketProjections = new HashSet<MarketProjection>();
             marketProjections.Add(MarketProjection.EVENT_TYPE);
@@ -158,6 +171,7 @@ namespace bf_bot.Strategies.Soccer
                     _logger.LogDebug("No ExchangePrices found for item " + JsonConvert.Serialize<MarketBook>(item));
                 }
             }
+            _logger.LogTrace("Marketbooks matching conditions: " + JsonConvert.Serialize<IList<MarketBook>>(filteredMarketBooks));
             return filteredMarketBooks;
         }
 
