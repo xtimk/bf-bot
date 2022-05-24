@@ -27,6 +27,12 @@ namespace bf_bot
         Task<IList<MarketBook>> listMarketBook(IList<string> marketIds, PriceProjection priceProjection, OrderProjection? orderProjection = null, MatchProjection? matchProjection = null, string currencyCode = null, string locale = null);
 
         /**
+         * calls api-ng to get detailed info about specific runner book
+         * */
+        Task<IList<MarketBook>> listRunnerBook(string marketId, long selectionId, PriceProjection priceProjection, OrderProjection? orderProjection = null, MatchProjection? matchProjection = null, string currencyCode = null, string locale = null);
+
+
+        /**
          * places a bet
          * */
         Task<PlaceExecutionReport> placeOrders(string marketId, string customerRef, IList<PlaceInstruction> placeInstructions, string locale = null);
