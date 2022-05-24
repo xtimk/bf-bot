@@ -249,12 +249,9 @@ namespace bf_bot
             }
             else
             {
-                string errorMessage = "Method <" + method + "> returned <" + httpResponse.StatusCode + ">, which is not OK.";
+                string errorMessage = "Method <" + method + "> returned <" + httpResponse.StatusCode + ">, which is not <Ok>.";
                 string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                _logger.LogError(errorMessage);
-                _logger.LogError(httpResponseBody);
-                // throw ReconstituteException(JsonConvert.Deserialize<bf_bot.TO.Exception>(httpResponseBody));
-                throw new BetfairClientException(_logger, errorMessage);
+                throw new BetfairClientException(_logger, errorMessage, httpResponseBody);
             }
         }
 
