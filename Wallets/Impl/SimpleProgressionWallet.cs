@@ -27,6 +27,7 @@ namespace bf_bot.Wallets.Impl
             _win_per_cycle = win_per_cycle;
             _balance = balance;
             _desired_wallet_balance = _balance + _win_per_cycle;
+            _step = 1;
         }
 
         public double getAmountToBet(double price)
@@ -53,6 +54,11 @@ namespace bf_bot.Wallets.Impl
             _balance += _lastBetAmount;
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
+        }
+
+        public void signalLose()
+        {
+            _step++;
         }
 
         public double getBalance()

@@ -38,5 +38,10 @@ namespace bf_bot.Wallets
         /// </summary>
         void signalWin();
 
+        /// <summary>
+        /// Signals the wallet that a bet is lost
+        /// </summary>
+        void signalLose();
+
     }
 }
