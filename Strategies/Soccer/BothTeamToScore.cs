@@ -126,7 +126,7 @@ namespace bf_bot.Strategies.Soccer
 
             while(runnerBook.First().Runners[0].Status != RunnerStatus.WINNER && runnerBook.First().Runners[0].Status != RunnerStatus.LOSER)
             {
-                Thread.Sleep(2000);
+                Thread.Sleep(60000 * 5);
                 runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
                 _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(runnerBook));
             }
