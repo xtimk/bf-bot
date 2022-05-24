@@ -54,7 +54,7 @@ namespace bf_bot.Strategies.Soccer
             }
             catch (BetfairClientException e)
             {
-                _logger.LogError("A client error has been encountered while executing strategy. Details: " + e.Message);
+                _logger.LogError("A Betfair Client error has been encountered while executing strategy. Details: " + e.Message);
             }
             catch (System.Exception e)
             {
@@ -98,12 +98,29 @@ namespace bf_bot.Strategies.Soccer
                 }
 
                 var marketBookToBet = SelectOneMarketBook(marketBooks);
+                _logger.LogInformation("Match found!");
 
                 var betPlaced = await PlaceBet(marketBookToBet);
                 if(!betPlaced)
                     continue;
+                
+                try
+                {
+                    await WaitForBetResult(marketBookToBet);
+                }
+                catch (BetfairClientException e)
+                {
+                    // handle client errors
+                    // the only error that is really handled is auth token expiration.
+                    var isHandled = await HandleBetfairEx(e);
+                    // after handling, if all is ok restart with the waitingfunction.
+                    if(isHandled)
+                        await WaitForBetResult(marketBookToBet);
+                    else
+                        _logger.LogError("Betfair client error not handled.");
+                }
 
-                await WaitForBetResult(marketBookToBet);
+                _logger.LogInformation("Betting cycle ended!");
 
                 // just stop at the first iteration for debugging logs after..
                 _active = false;
@@ -130,6 +147,8 @@ namespace bf_bot.Strategies.Soccer
                 runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
                 _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(runnerBook));
             }
+
+            _logger.LogInformation("Game has ended!");
 
             if(runnerBook.First().Runners[0].Status == RunnerStatus.WINNER)
             {
@@ -301,6 +320,39 @@ namespace bf_bot.Strategies.Soccer
             _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(marketBook));
             
             return marketBook.ToList();
+        }
+        public async Task<bool> HandleBetfairEx(BetfairClientException e)
+        {
+            if(e.Body != null)
+            {
+                try
+                {
+                    dynamic errorBody = e.Body;
+                    var errorDetails = Newtonsoft.Json.JsonConvert.DeserializeObject(errorBody);
+                    var errorCode = errorDetails.detail.APINGException.errorCode;
+                    if(errorCode == "INVALID_SESSION_INFORMATION")
+                    {
+                        _logger.LogInformation("Authentication token has expired.");
+                        await _client.RequestLogin();
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Betfair errorCode not handled. Trace: " + e.Body);
+                        return false;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogWarning("Betfair client error not handled: " + ex);
+                    return false;
+                }
+            }
+            else
+            {
+                _logger.LogError("A client error has been encountered while executing strategy. Details: " + e.Message);
+                return false;
+            }
         }
     }
 }
