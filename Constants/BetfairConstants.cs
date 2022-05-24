@@ -6,6 +6,7 @@ namespace bf_bot.Constants
         public static readonly string LIST_MARKET_CATALOGUE_METHOD = "listMarketCatalogue";
         public static readonly string LIST_MARKET_TYPES_METHOD = "listMarketTypes";
         public static readonly string LIST_MARKET_BOOK_METHOD = "listMarketBook";
+        public static readonly string LIST_RUNNER_BOOK_METHOD = "listRunnerBook";
         public static readonly string PLACE_ORDERS_METHOD = "placeOrders";
         public static readonly string LIST_MARKET_PROFIT_AND_LOST_METHOD = "listMarketProfitAndLoss";
         public static readonly string LIST_CURRENT_ORDERS_METHOD = "listCurrentOrders";
@@ -24,6 +25,7 @@ namespace bf_bot.Constants
         public static readonly String MAX_RESULTS = "maxResults";
         public static readonly String MARKET_IDS = "marketIds";
         public static readonly String MARKET_ID = "marketId";
+        public static readonly String SELECTION_ID = "selectionId";
         public static readonly String INSTRUCTIONS = "instructions";
         public static readonly String CUSTOMER_REFERENCE = "customerRef";
         public static readonly string INCLUDE_SETTLED_BETS = "includeSettledBets";

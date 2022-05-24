@@ -70,6 +70,18 @@ namespace bf_bot
             return await Invoke<List<MarketBook>>(Constants.BetfairConstants.LIST_MARKET_BOOK_METHOD, args);
         }
 
+        public async Task<IList<MarketBook>> listRunnerBook(string marketId, long selectionId, PriceProjection priceProjection, OrderProjection? orderProjection = null, MatchProjection? matchProjection = null, string currencyCode = null, string locale = null)
+        {
+            var args = new Dictionary<string, object>();
+            args[Constants.BetfairConstants.MARKET_ID] = marketId;
+            args[Constants.BetfairConstants.SELECTION_ID] = selectionId;
+            args[Constants.BetfairConstants.PRICE_PROJECTION] = priceProjection;
+            args[Constants.BetfairConstants.ORDER_PROJECTION] = orderProjection;
+            args[Constants.BetfairConstants.MATCH_PROJECTION] = matchProjection;
+            args[Constants.BetfairConstants.LOCALE] = locale;
+            args[Constants.BetfairConstants.CURRENCY_CODE] = currencyCode;
+            return await Invoke<List<MarketBook>>(Constants.BetfairConstants.LIST_RUNNER_BOOK_METHOD, args);
+        }
         public async Task<PlaceExecutionReport> placeOrders(string marketId, string customerRef, IList<PlaceInstruction> placeInstructions, string locale = null)
         {
             var args = new Dictionary<string, object>();
