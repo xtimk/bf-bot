@@ -129,6 +129,7 @@ namespace bf_bot.Strategies.Soccer
 
         public async Task<bool> WaitForBetResult(MarketBook marketBook)
         {
+            _logger.LogInformation("Waiting for the bet result.");
             ISet<PriceData> priceData = new HashSet<PriceData>();
             priceData.Add(PriceData.EX_BEST_OFFERS);
             
@@ -204,7 +205,6 @@ namespace bf_bot.Strategies.Soccer
 
             _wallet.signalPlaceBet(amountToBet);
 
-            _logger.LogInformation("Placed bet " + amountToBet + "EUR @ " + price);
             _logger.LogInformation("Betfair link: https://www.betfair.it/exchange/plus/football/market/" + marketId);
 
             return true;
@@ -219,7 +219,7 @@ namespace bf_bot.Strategies.Soccer
 
         private bool PlaceFakeBet(string marketId, long selectionId, double amountToBet, double price)
         {
-            _logger.LogInformation("Placed bet in TEST mode.");
+            _logger.LogInformation("Placed bet in TEST mode: " + amountToBet + "EUR @ " + price);
             return true;
         }
 
