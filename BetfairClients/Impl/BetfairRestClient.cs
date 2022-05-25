@@ -231,7 +231,7 @@ namespace bf_bot
             
             requestMessage.Content = postData;
 
-            _logger.LogDebug("Calling method <" + method + "> With args: " + postData.ReadAsStringAsync().Result);
+            _logger.LogTrace("Calling method <" + method + "> With args: " + postData.ReadAsStringAsync().Result);
 
             HttpResponseMessage httpResponse = await HttpClientSingleton.Instance.Client.SendAsync(requestMessage);
             if(httpResponse.StatusCode == System.Net.HttpStatusCode.OK)
@@ -269,7 +269,7 @@ namespace bf_bot
             else
             {
                 _logger.LogError("Cant authenticate user. Check user credentials in json file.");
-                _logger.LogDebug(Utility.PrettyJsonObject(loginResult));
+                _logger.LogTrace(Utility.PrettyJsonObject(loginResult));
                 return false;
             } 
         }
