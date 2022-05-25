@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using bf_bot.Constants;
 using bf_bot.Exceptions;
 using bf_bot.Json;
@@ -54,11 +56,11 @@ namespace bf_bot.Strategies.Soccer
             }
             catch (BetfairClientException e)
             {
-                _logger.LogError("A Betfair Client error has been encountered while executing strategy. Details: " + e.Message);
+                _logger.LogError("A Betfair Client error has been encountered while executing strategy. Details: " + e.StackTrace);
             }
             catch (System.Exception e)
             {
-                _logger.LogError("A generic error has been encountered while executing strategy. Details: " + e.Message);
+                _logger.LogError("A generic error has been encountered while executing strategy. Details: " + e.StackTrace);
             }
             _logger.LogInformation("BothTeamToScore strategy has stopped.");
         }
@@ -73,6 +75,8 @@ namespace bf_bot.Strategies.Soccer
         {
             while(_active)
             {
+                _logger.LogInformation("Searching match that matches the desired conditions.");
+
                 Thread.Sleep(_timer);
 
                 var soccerEventIds = await GetSoccerEventTypes();
@@ -104,32 +108,18 @@ namespace bf_bot.Strategies.Soccer
                 if(!betPlaced)
                     continue;
                 
-                try
-                {
-                    await WaitForBetResult(marketBookToBet);
-                }
-                catch (BetfairClientException e)
-                {
-                    // handle client errors
-                    // the only error that is really handled is auth token expiration.
-                    var isHandled = await HandleBetfairEx(e);
-                    // after handling, if all is ok restart with the waitingfunction.
-                    if(isHandled)
-                        await WaitForBetResult(marketBookToBet);
-                    else
-                        _logger.LogError("Betfair client error not handled.");
-                }
+                await WaitForBetResult(marketBookToBet);
 
                 _logger.LogInformation("Betting cycle ended!");
 
                 // just stop at the first iteration for debugging logs after..
-                _active = false;
+                // _active = false;
             }
         }
 
         public async Task<bool> WaitForBetResult(MarketBook marketBook)
         {
-            _logger.LogInformation("Waiting for the bet result.");
+            _logger.LogInformation("Waiting for bet results.");
             ISet<PriceData> priceData = new HashSet<PriceData>();
             priceData.Add(PriceData.EX_BEST_OFFERS);
             
@@ -139,13 +129,18 @@ namespace bf_bot.Strategies.Soccer
             var marketId = marketBook.MarketId;
             var selectionId = marketBook.Runners[0].SelectionId;
 
-            var runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
+            // var runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
+            var runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
+
             _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(runnerBook));
 
             while(runnerBook.First().Runners[0].Status != RunnerStatus.WINNER && runnerBook.First().Runners[0].Status != RunnerStatus.LOSER)
             {
-                Thread.Sleep(60000 * 5);
-                runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
+                Thread.Sleep(60000);
+                _logger.LogDebug("Checking market updates.");
+                // runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
+                runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
+
                 _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(runnerBook));
             }
 
@@ -239,17 +234,43 @@ namespace bf_bot.Strategies.Soccer
         public async Task<ISet<string>> GetSoccerEventTypes()
         {
             var marketFilter = new MarketFilter();
-            var eventTypes = await _client.listEventTypes(marketFilter);
+
+            // var eventTypes = await _client.listEventTypes(marketFilter);
+            // Use the method below instead of the direct _client.Method..
+            var eventTypes = (IList<EventTypeResult>)await InvokeBetfairClientMethodAsync(() => _client.listEventTypes(marketFilter));
+
             ISet<string> eventypeIds = new HashSet<string>();   
             foreach (EventTypeResult eventType in eventTypes)
             {
                 if (eventType.EventType.Name.Equals("Soccer"))
                 {
-                    _logger.LogDebug("EventType: " + JsonConvert.Serialize<EventTypeResult>(eventType));
+                    _logger.LogTrace("EventType: " + JsonConvert.Serialize<EventTypeResult>(eventType));
                     eventypeIds.Add(eventType.EventType.Id);
                 }
             }
             return eventypeIds;
+        }
+
+        public dynamic InvokeBetfairClientMethodAsync(Func<dynamic> methodWithParameters) {
+            dynamic result = null;
+            try
+            {
+                result = methodWithParameters();
+            }
+            catch (BetfairClientException e)
+            {
+                var isHandled = HandleBetfairEx(e);
+                if(isHandled.Result)
+                {
+                    _client.RequestLogin().Wait();
+                    return InvokeBetfairClientMethodAsync(methodWithParameters);
+                }
+            }
+            catch (System.Exception e)
+            {
+                _logger.LogWarning("Betfair client error not handled: " + e);
+            }
+            return result;
         }
 
         public async Task<List<MarketCatalogue>> GetNextGamesMarketCatalogues(ISet<string> eventypeIds)
@@ -269,9 +290,11 @@ namespace bf_bot.Strategies.Soccer
             marketProjections.Add(MarketProjection.EVENT);
             marketProjections.Add(MarketProjection.COMPETITION);
 
-            _logger.LogInformation("Getting the next " + maxResults + " available soccer markets");
+            _logger.LogDebug("Getting the next " + maxResults + " available soccer markets");
 
-            var marketCatalogues = await _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults);
+            // var marketCatalogues = await _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults);
+            var marketCatalogues = (IList<MarketCatalogue>)await InvokeBetfairClientMethodAsync(() => _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults));
+
 
             _logger.LogTrace(JsonConvert.Serialize<IList<MarketCatalogue>>(marketCatalogues));
 
@@ -316,7 +339,9 @@ namespace bf_bot.Strategies.Soccer
             var priceProjection = new PriceProjection();
             priceProjection.PriceData = priceData;
 
-            var marketBook = await _client.listMarketBook(marketCatalogues.Select(x => x.MarketId).ToList(), priceProjection);
+            // var marketBook = await _client.listMarketBook(marketCatalogues.Select(x => x.MarketId).ToList(), priceProjection);
+            var marketBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listMarketBook(marketCatalogues.Select(x => x.MarketId).ToList(), priceProjection));
+
             _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(marketBook));
             
             return marketBook.ToList();
