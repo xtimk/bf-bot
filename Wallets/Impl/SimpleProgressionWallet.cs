@@ -47,6 +47,8 @@ namespace bf_bot.Wallets.Impl
         {
             _balance -= amount;
             _lastBetAmount = amount;
+            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
+            _logger.LogInformation("Current step is: " + _step);
         }
 
         public void signalWin(double amount)
@@ -54,7 +56,7 @@ namespace bf_bot.Wallets.Impl
             _balance += amount;
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
-            _logger.LogInformation("Balance is " + _balance + "EUR.");
+            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
         }
 
         public void signalWin()
@@ -62,13 +64,13 @@ namespace bf_bot.Wallets.Impl
             _balance += _lastBetAmount;
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
-            _logger.LogInformation("Balance is " + _balance + "EUR.");
+            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
         }
 
         public void signalLose()
         {
             _step++;
-            _logger.LogInformation("Balance is " + _balance + "EUR.");
+            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
         }
 
         public double getBalance()
