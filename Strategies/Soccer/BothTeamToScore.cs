@@ -11,15 +11,19 @@ namespace bf_bot.Strategies.Soccer
 {
     public class BothTeamToScore : IStrategy
     {
-        private string _marketCatalogueMaxResults = "100";
+        // Strategy condition: ToDO: pass this instead of defining it locally
         private MarketBookFilterCondition _condition = new() {
             MaxPrice = 4,
-            MinPrice = 1.7,
+            MinPrice = 1.5,
             MinSize = 10
         };
 
+        // Strategy constants
+        private string _marketCatalogueMaxResults = "100";
         private int _timer = 5000;
         private int _wait_result_timer = 60000;
+        // --
+
         private IClient _client;
         private readonly ILogger<BothTeamToScore> _logger;
         private bool _active = false;
@@ -77,7 +81,10 @@ namespace bf_bot.Strategies.Soccer
                 _logger.LogError(e.StackTrace);
                 _logger.LogError(e.InnerException.ToString());
             }
-            _logger.LogInformation("BothTeamToScore strategy has stopped.");
+            finally
+            {
+                _logger.LogInformation("BothTeamToScore strategy has stopped.");
+            }
         }
 
         public void Stop()
@@ -90,7 +97,7 @@ namespace bf_bot.Strategies.Soccer
         {
             while(_active)
             {
-                _logger.LogInformation("Searching match that matches the desired conditions.");
+                _logger.LogInformation("Searching match suitable with desired conditions.");
 
                 Thread.Sleep(_timer);
 
@@ -143,19 +150,13 @@ namespace bf_bot.Strategies.Soccer
 
             var marketId = marketBook.MarketId;
             var selectionId = marketBook.Runners[0].SelectionId;
-            // var runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
             var runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
-
-            _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(runnerBook));
 
             while(runnerBook.First().Runners[0].Status != RunnerStatus.WINNER && runnerBook.First().Runners[0].Status != RunnerStatus.LOSER)
             {
                 Thread.Sleep(_wait_result_timer);
                 _logger.LogDebug("Checking market updates.");
-                // runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
                 runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
-
-                _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(runnerBook));
             }
 
             _logger.LogInformation("Game has ended!");
@@ -250,8 +251,6 @@ namespace bf_bot.Strategies.Soccer
         {
             var marketFilter = new MarketFilter();
 
-            // var eventTypes = await _client.listEventTypes(marketFilter);
-            // Use the method below instead of the direct _client.Method..
             var eventTypes = (IList<EventTypeResult>)await InvokeBetfairClientMethodAsync(() => _client.listEventTypes(marketFilter));
 
             ISet<string> eventypeIds = new HashSet<string>();   
@@ -278,7 +277,6 @@ namespace bf_bot.Strategies.Soccer
                 var isHandled = HandleBetfairEx(e);
                 if(isHandled.Result)
                 {
-                    _client.RequestLogin().Wait();
                     return await InvokeBetfairClientMethodAsync(methodWithParameters);
                 }
             }
@@ -308,11 +306,7 @@ namespace bf_bot.Strategies.Soccer
 
             _logger.LogDebug("Getting the next " + maxResults + " available soccer markets");
 
-            // var marketCatalogues = await _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults);
             var marketCatalogues = (IList<MarketCatalogue>)await InvokeBetfairClientMethodAsync(() => _client.listMarketCatalogue(marketFilter, marketProjections, marketSort, maxResults));
-
-
-            _logger.LogTrace(JsonConvert.Serialize<IList<MarketCatalogue>>(marketCatalogues));
 
             return marketCatalogues.ToList();
         }
@@ -355,10 +349,7 @@ namespace bf_bot.Strategies.Soccer
             var priceProjection = new PriceProjection();
             priceProjection.PriceData = priceData;
 
-            // var marketBook = await _client.listMarketBook(marketCatalogues.Select(x => x.MarketId).ToList(), priceProjection);
             var marketBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listMarketBook(marketCatalogues.Select(x => x.MarketId).ToList(), priceProjection));
-
-            _logger.LogTrace(JsonConvert.Serialize<IList<MarketBook>>(marketBook));
             
             return marketBook.ToList();
         }
