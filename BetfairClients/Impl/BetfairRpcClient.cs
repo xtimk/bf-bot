@@ -256,8 +256,10 @@ namespace bf_bot
                 throw new BetfairClientException(_logger, errorMessage);
             }
         }
-
-
+        public void InvalidateLogin()
+        {
+            AuthToken = "NotAValidToken";
+        }
         public async Task<bool> RequestLogin()
         {
             _logger.LogInformation("Login requested.");

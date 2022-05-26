@@ -255,7 +255,10 @@ namespace bf_bot
             }
         }
 
-
+        public void InvalidateLogin()
+        {
+            AuthToken = "NotAValidToken";
+        }
         public async Task<bool> RequestLogin()
         {
             _logger.LogInformation("Requested login to betfair account endpoint.");
