@@ -239,6 +239,7 @@ namespace bf_bot
                 try
                 {
                     string httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                    _logger.LogTrace("Response for method <" + method + ">: " + httpResponseBody);
                     return JsonConvert.Deserialize<T>(httpResponseBody);
                 }
                 catch (System.Exception e)
