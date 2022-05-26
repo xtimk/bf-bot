@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace bf_bot.Wallets.Impl
 {
@@ -15,6 +16,8 @@ namespace bf_bot.Wallets.Impl
         private double _win_per_cycle;
         private double _desired_wallet_balance;
         private double _lastBetAmount;
+        private string _wallet_type_name = "Simple Progression Wallet";
+        private readonly ILogger<SimpleProgressionWallet> _logger;
 
         // public SimpleProgressionWallet(double balance, double win_per_cycle)
         // {
@@ -22,6 +25,10 @@ namespace bf_bot.Wallets.Impl
         //     _balance = balance;
         //     _desired_wallet_balance = _balance + _win_per_cycle;
         // }
+        public SimpleProgressionWallet(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.CreateLogger<SimpleProgressionWallet>();
+        }
         public void Init(double balance, double win_per_cycle)
         {
             _win_per_cycle = win_per_cycle;
@@ -47,6 +54,7 @@ namespace bf_bot.Wallets.Impl
             _balance += amount;
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
+            _logger.LogInformation("Balance is " + _balance + "EUR.");
         }
 
         public void signalWin()
@@ -54,16 +62,23 @@ namespace bf_bot.Wallets.Impl
             _balance += _lastBetAmount;
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
+            _logger.LogInformation("Balance is " + _balance + "EUR.");
         }
 
         public void signalLose()
         {
             _step++;
+            _logger.LogInformation("Balance is " + _balance + "EUR.");
         }
 
         public double getBalance()
         {
             return _balance;
+        }
+
+        public string getWalletName()
+        {
+            return _wallet_type_name;
         }
     }
 }

@@ -42,6 +42,11 @@ namespace bf_bot.Wallets
         /// Signals the wallet that a bet is lost
         /// </summary>
         void signalLose();
+        
+        /// <summary>
+        /// Gets the wallet name
+        /// </summary>
+        string getWalletName();
 
     }
 }

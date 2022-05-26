@@ -11,14 +11,14 @@ var runningMode = RunningMode.TEST;
 
 var serviceProvider = new ServiceCollection().AddLogging(builder => {
     builder
-        .SetMinimumLevel(LogLevel.Trace)
+        .SetMinimumLevel(LogLevel.Debug)
         .AddSimpleConsole( options => {
             options.IncludeScopes = true;
             options.SingleLine = true;
             options.TimestampFormat = "[dd/mm/yyyy hh:mm:ss] ";
         });
     })
-    .AddScoped<IWallet, SimpleProgressionWallet>()
+    .AddScoped<IWallet, SimpleProgressionWallet>(provider => new SimpleProgressionWallet(provider.GetRequiredService<ILoggerFactory>()))
     .AddSingleton<BetfairClientInitializer>()
     .AddScoped<IClient, BetfairRestClient>(provider => new BetfairRestClient(provider.GetRequiredService<ILoggerFactory>(), Utility.CreateInitializer()))
     .AddScoped<IStrategy, BothTeamToScore>(provider => 
