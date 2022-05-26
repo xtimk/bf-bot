@@ -18,7 +18,8 @@ namespace bf_bot.Strategies.Soccer
             MinSize = 10
         };
 
-        private int _timer = 3000;
+        private int _timer = 5000;
+        private int _wait_result_timer = 60000;
         private IClient _client;
         private readonly ILogger<BothTeamToScore> _logger;
         private bool _active = false;
@@ -37,6 +38,9 @@ namespace bf_bot.Strategies.Soccer
             _logger.LogInformation("Starting BothTeamToScore strategy.");
             _logger.LogInformation("Running Mode: " + _mode);
 
+            if(_mode == RunningMode.REAL)
+                throw new NotImplementedException("Bot in real mode is not implemented.");
+
             // first of all authenticate the client.
             var logged_in = await _client.RequestLogin();
             if(!logged_in)
@@ -47,9 +51,18 @@ namespace bf_bot.Strategies.Soccer
 
             _active = true;
 
-            // init wallet... ToDo: check if we can init in a better way..
-            _wallet.Init(1000, 2);
-
+            if(_mode == RunningMode.TEST)
+            {
+                var balance = 1000;
+                var win_per_cycle = 2;
+                _wallet.Init(balance, win_per_cycle);
+            }
+            else if (_mode == RunningMode.REAL)
+            {
+                // here i need to call the betfair api to retrieve the balance of the account.
+                throw new NotImplementedException("Method to retrieve account balance not implemented.");
+            }
+            _logger.LogInformation("Starting with wallet of type <" + _wallet.getWalletName() + ">. Balance is " + _wallet.getBalance() + "EUR");
             try
             {
                 await DoStrategy();
@@ -60,7 +73,9 @@ namespace bf_bot.Strategies.Soccer
             }
             catch (System.Exception e)
             {
-                _logger.LogError("A generic error has been encountered while executing strategy. Details: " + e.StackTrace);
+                _logger.LogError("A generic error has been encountered while executing strategy. Details: " + e.Message);
+                _logger.LogError(e.StackTrace);
+                _logger.LogError(e.InnerException.ToString());
             }
             _logger.LogInformation("BothTeamToScore strategy has stopped.");
         }
@@ -128,7 +143,6 @@ namespace bf_bot.Strategies.Soccer
 
             var marketId = marketBook.MarketId;
             var selectionId = marketBook.Runners[0].SelectionId;
-
             // var runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
             var runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
 
@@ -136,7 +150,7 @@ namespace bf_bot.Strategies.Soccer
 
             while(runnerBook.First().Runners[0].Status != RunnerStatus.WINNER && runnerBook.First().Runners[0].Status != RunnerStatus.LOSER)
             {
-                Thread.Sleep(60000);
+                Thread.Sleep(_wait_result_timer);
                 _logger.LogDebug("Checking market updates.");
                 // runnerBook = await _client.listRunnerBook(marketId, selectionId, priceProjection);
                 runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
@@ -178,7 +192,7 @@ namespace bf_bot.Strategies.Soccer
             }
             if(amountToBet < 2)
             {
-                _logger.LogWarning("The betting amount <" + amountToBet + "> is less than the minimal bet (2 EUR). Will automatically bet 2 EUR.");
+                _logger.LogWarning("The betting amount <" + amountToBet + "> is less than the minimum allowed bet (2 EUR). Will automatically bet 2 EUR.");
                 amountToBet = 2;
             }
 
@@ -209,6 +223,7 @@ namespace bf_bot.Strategies.Soccer
         private async Task<bool> PlaceRealBet(string marketId, long selectionId, double amountToBet, double price)
         {
             _logger.LogCritical("Place real bet here. Not implemented yet!");
+            throw new NotImplementedException("Place bet in REAL mode not implemented.");
             return false;
         }
 
@@ -251,19 +266,20 @@ namespace bf_bot.Strategies.Soccer
             return eventypeIds;
         }
 
-        public dynamic InvokeBetfairClientMethodAsync(Func<dynamic> methodWithParameters) {
+        public async Task<dynamic> InvokeBetfairClientMethodAsync(Func<dynamic> methodWithParameters) {
             dynamic result = null;
             try
             {
-                result = methodWithParameters();
+                result = await methodWithParameters();
             }
             catch (BetfairClientException e)
             {
+                _logger.LogDebug("Handling BetfairClientException.");
                 var isHandled = HandleBetfairEx(e);
                 if(isHandled.Result)
                 {
                     _client.RequestLogin().Wait();
-                    return InvokeBetfairClientMethodAsync(methodWithParameters);
+                    return await InvokeBetfairClientMethodAsync(methodWithParameters);
                 }
             }
             catch (System.Exception e)
