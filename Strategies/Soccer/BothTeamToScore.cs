@@ -213,7 +213,7 @@ namespace bf_bot.Strategies.Soccer
                 return false;
             }
 
-            _wallet.signalPlaceBet(amountToBet);
+            _wallet.signalPlaceBet(amountToBet, price);
 
             _logger.LogInformation("Betfair link: https://www.betfair.it/exchange/plus/football/market/" + marketId);
 

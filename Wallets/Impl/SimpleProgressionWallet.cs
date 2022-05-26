@@ -16,6 +16,7 @@ namespace bf_bot.Wallets.Impl
         private double _win_per_cycle;
         private double _desired_wallet_balance;
         private double _lastBetAmount;
+        private double _lastPriceAmount;
         private string _wallet_type_name = "Simple Progression Wallet";
         private readonly ILogger<SimpleProgressionWallet> _logger;
 
@@ -43,34 +44,35 @@ namespace bf_bot.Wallets.Impl
             return amountToWin/(price - 1);
         }
 
-        public void signalPlaceBet(double amount)
+        public void signalPlaceBet(double amount, double price)
         {
             _balance -= amount;
             _lastBetAmount = amount;
-            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
-            _logger.LogInformation("Current step is: " + _step);
+            _lastPriceAmount = price;
+            _logger.LogInformation("Step " + _step + " - Current balance is " + _balance + "EUR. The desired balance after cycle is: " + _desired_wallet_balance + "EUR.");
+            _logger.LogInformation("Step " + _step + " - Actual balance in bet is won (end the cycle) at this step will be " + (_balance + (amount * price)) + "EUR");
         }
 
         public void signalWin(double amount)
         {
             _balance += amount;
             _desired_wallet_balance = _balance + _win_per_cycle;
+            _logger.LogInformation("Cycle closed at step " + _step + ". Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
             _step = 1;
-            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
         }
 
         public void signalWin()
         {
-            _balance += _lastBetAmount;
+            _balance += (_lastBetAmount * _lastPriceAmount);
             _desired_wallet_balance = _balance + _win_per_cycle;
+            _logger.LogInformation("Cycle closed at step " + _step + ". Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
             _step = 1;
-            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
         }
 
         public void signalLose()
         {
+            _logger.LogInformation("Step " + _step + " - Bet lost. Will now increment step. Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
             _step++;
-            _logger.LogInformation("Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
         }
 
         public double getBalance()
