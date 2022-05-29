@@ -10,7 +10,6 @@ namespace bf_bot.Wallets.Impl
     public class SimpleProgressionWallet : IWallet
     {
         private double _balance;
-        
         // trace step just for printing purposes, it is really not necessary for the logic.
         private int _step;
         private double _win_per_cycle;
@@ -20,12 +19,6 @@ namespace bf_bot.Wallets.Impl
         private string _wallet_type_name = "Simple Progression Wallet";
         private readonly ILogger _logger;
 
-        // public SimpleProgressionWallet(double balance, double win_per_cycle)
-        // {
-        //     _win_per_cycle = win_per_cycle;
-        //     _balance = balance;
-        //     _desired_wallet_balance = _balance + _win_per_cycle;
-        // }
         public SimpleProgressionWallet(ILogger<SimpleProgressionWallet> logger)
         {
             _logger = logger;
@@ -67,7 +60,7 @@ namespace bf_bot.Wallets.Impl
         {
             _balance += (_lastBetAmount * _lastPriceAmount);
             _desired_wallet_balance = _balance + _win_per_cycle;
-            _logger.LogInformation("Cycle closed at step " + _step + ". Balance is " + _balance + "EUR. Desired balance after cycle is: " + _desired_wallet_balance);
+            _logger.LogInformation("Cycle closed at step " + _step + ". Balance is " + _balance + "EUR. Desired balance after next cycle is: " + _desired_wallet_balance);
             _step = 1;
         }
 
