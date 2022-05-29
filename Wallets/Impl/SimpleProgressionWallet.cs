@@ -18,7 +18,7 @@ namespace bf_bot.Wallets.Impl
         private double _lastBetAmount;
         private double _lastPriceAmount;
         private string _wallet_type_name = "Simple Progression Wallet";
-        private readonly ILogger<SimpleProgressionWallet> _logger;
+        private readonly ILogger _logger;
 
         // public SimpleProgressionWallet(double balance, double win_per_cycle)
         // {
@@ -26,16 +26,17 @@ namespace bf_bot.Wallets.Impl
         //     _balance = balance;
         //     _desired_wallet_balance = _balance + _win_per_cycle;
         // }
-        public SimpleProgressionWallet(ILoggerFactory loggerFactory)
+        public SimpleProgressionWallet(ILogger<SimpleProgressionWallet> logger)
         {
-            _logger = loggerFactory.CreateLogger<SimpleProgressionWallet>();
+            _logger = logger;
         }
-        public void Init(double balance, double win_per_cycle)
+        public bool Init(double balance, double win_per_cycle)
         {
             _win_per_cycle = win_per_cycle;
             _balance = balance;
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
+            return true;
         }
 
         public double getAmountToBet(double price)
@@ -49,8 +50,9 @@ namespace bf_bot.Wallets.Impl
             _balance -= amount;
             _lastBetAmount = amount;
             _lastPriceAmount = price;
+            _logger.LogInformation("Step " + _step + " - Bet placed: " + amount + "@" + price);
             _logger.LogInformation("Step " + _step + " - Current balance is " + _balance + "EUR. The desired balance after cycle is: " + _desired_wallet_balance + "EUR.");
-            _logger.LogInformation("Step " + _step + " - Actual balance in bet is won (end the cycle) at this step will be " + (_balance + (amount * price)) + "EUR");
+            _logger.LogInformation("Step " + _step + " - Actual balance if bet wins (end the cycle) at this step will be " + (_balance + (amount * price)) + "EUR");
         }
 
         public void signalWin(double amount)

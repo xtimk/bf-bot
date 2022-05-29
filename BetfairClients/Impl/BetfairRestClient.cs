@@ -14,28 +14,23 @@ namespace bf_bot
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
         private readonly ILogger<BetfairRestClient> _logger;
-        private readonly ILoggerFactory _loggerFactory;
-        public void Init(BetfairClientInitializer betfairSettings)
+        public BetfairRestClient(ILogger<BetfairRestClient> logger)
+        {
+            _logger = logger;
+        }
+
+        public bool Init(BetfairClientInitializer betfairSettings)
         {
             _logger.LogInformation("Initializing client.");
             if(Utility.AreAllPropNotNull(betfairSettings))
             {
                 _betfairSettings = betfairSettings;
+                return true;
             }
-        }
-        public BetfairRestClient(ILoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
-            _logger = _loggerFactory.CreateLogger<BetfairRestClient>();
-        }
-
-        public BetfairRestClient(ILoggerFactory loggerFactory, BetfairClientInitializer betfairSettings)
-        {
-            _loggerFactory = loggerFactory;
-            _logger = _loggerFactory.CreateLogger<BetfairRestClient>();
-            if(Utility.AreAllPropNotNull(betfairSettings))
+            else
             {
-                _betfairSettings = betfairSettings;
+                _logger.LogError("Can't initialize betfair client.");
+                return false;
             }
         }
 

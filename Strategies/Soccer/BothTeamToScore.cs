@@ -25,16 +25,21 @@ namespace bf_bot.Strategies.Soccer
         // --
 
         private IClient _client;
-        private readonly ILogger<BothTeamToScore> _logger;
+        private readonly ILogger _logger;
         private bool _active = false;
-        private readonly RunningMode _mode;
-        private readonly IWallet _wallet;
-        public BothTeamToScore(RunningMode mode, IClient client, ILoggerFactory loggerFactory, IWallet wallet)
+        private RunningMode _mode;
+        private IWallet _wallet;
+        public BothTeamToScore(ILogger<BothTeamToScore> logger)
+        {
+            _logger = logger; // loggerFactory.CreateLogger<BothTeamToScore>();
+        }
+
+        public bool Init(RunningMode mode, IClient client, IWallet wallet)
         {
             _wallet = wallet;
             _mode = mode;
-            _logger = loggerFactory.CreateLogger<BothTeamToScore>();
-            _client = client;
+            _client = client; 
+            return true;        
         }
 
         public async Task Start()
@@ -131,8 +136,6 @@ namespace bf_bot.Strategies.Soccer
                     continue;
                 
                 await WaitForBetResult(marketBookToBet);
-
-                _logger.LogInformation("Betting cycle ended!");
 
                 // just stop at the first iteration for debugging logs after..
                 // _active = false;

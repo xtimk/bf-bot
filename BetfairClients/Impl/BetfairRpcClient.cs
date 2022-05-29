@@ -14,13 +14,15 @@ namespace bf_bot
         protected BetfairClientInitializer _betfairSettings;
         private readonly ILogger _logger;
         private readonly ILoggerFactory _loggerFactory;
-        public void Init(BetfairClientInitializer betfairSettings)
+        public bool Init(BetfairClientInitializer betfairSettings)
         {
             _logger.LogInformation("Initializing client.");
             if(Utility.AreAllPropNotNull(betfairSettings))
             {
                 _betfairSettings = betfairSettings;
+                return true;
             }
+            return false;
         }
         public BetfairRpcClientRpc(ILoggerFactory loggerFactory)
         {

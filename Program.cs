@@ -6,30 +6,55 @@ using Microsoft.Extensions.DependencyInjection;
 using bf_bot.Constants;
 using bf_bot.Wallets;
 using bf_bot.Wallets.Impl;
+using Microsoft.Extensions.Configuration;
+using Serilog;
+using Serilog.Sinks.Elasticsearch;
 
 var runningMode = RunningMode.TEST;
 
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json")
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
+    .Build();
+
+var elasticUrl = configuration.GetValue<string>("ElasticSearchUrl:nodeUrl");
+
+var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .WriteTo.Elasticsearch(
+        new ElasticsearchSinkOptions(new Uri(elasticUrl))
+        {
+            IndexFormat = "bf-bot-system-logs-{0:yyyy.MM.dd}",
+            ModifyConnectionSettings = (configuration) => 
+                configuration.ServerCertificateValidationCallback((o, certificate, arg3, arg4) => { return true; })
+        })
+    .CreateLogger();
+
+Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
+        
 var serviceProvider = new ServiceCollection().AddLogging(builder => {
-    builder
-        .SetMinimumLevel(LogLevel.Debug)
-        .AddSimpleConsole( options => {
-            options.IncludeScopes = true;
-            options.SingleLine = true;
-            options.TimestampFormat = "[dd/mm/yyyy hh:mm:ss] ";
-        });
+    builder.ClearProviders();
+    builder.AddSerilog(logger);
     })
-    .AddScoped<IWallet, SimpleProgressionWallet>(provider => new SimpleProgressionWallet(provider.GetRequiredService<ILoggerFactory>()))
+    .AddScoped<IWallet, SimpleProgressionWallet>()
     .AddSingleton<BetfairClientInitializer>()
-    .AddScoped<IClient, BetfairRestClient>(provider => new BetfairRestClient(provider.GetRequiredService<ILoggerFactory>(), Utility.CreateInitializer()))
-    .AddScoped<IStrategy, BothTeamToScore>(provider => 
-        new BothTeamToScore(
-                runningMode, 
-                provider.GetRequiredService<IClient>(), 
-                provider.GetRequiredService<ILoggerFactory>(), 
-                provider.GetRequiredService<IWallet>()
-            )
-        )
+    .AddScoped<IClient, BetfairRestClient>()
+    .AddScoped<IStrategy, BothTeamToScore>()
     .BuildServiceProvider();
 
-var btScoreStrategy = serviceProvider.GetService<IStrategy>();
-await btScoreStrategy.Start();
+
+var client = serviceProvider.GetRequiredService<IClient>();
+client.Init(Utility.CreateInitializer());
+
+var wallet = serviceProvider.GetRequiredService<IWallet>();
+wallet.Init(1000, 2);
+
+var strategy = serviceProvider.GetRequiredService<IStrategy>();
+strategy.Init(
+    runningMode,
+    serviceProvider.GetRequiredService<IClient>(),
+    serviceProvider.GetRequiredService<IWallet>()
+);
+
+await strategy.Start();

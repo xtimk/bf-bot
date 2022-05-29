@@ -12,7 +12,7 @@ namespace bf_bot.Wallets
                 /// <summary>
         /// Given the price returns the amount to bet
         /// </summary>
-        void Init(double balance, double win_per_cycle);
+        bool Init(double balance, double win_per_cycle);
         /// <summary>
         /// Given the price returns the amount to bet
         /// </summary>
