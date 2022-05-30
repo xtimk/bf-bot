@@ -11,5 +11,6 @@ namespace bf_bot.Elasticsearch
         public double Balance { get; set; }
         public string BetfairLink { get; set; }
         public string BetResult { get; set; } = "WIN";
+        public Guid CycleGuid { get; set; }
     }
 }

@@ -24,6 +24,7 @@ namespace bf_bot.Wallets.Impl
         private ElasticClient _esClient;
         private string _betDescription;
         private readonly AppGuid _sessionGuid;
+        private Guid _cycleGuid;
 
         private void IndexDocument<T>(T doc) where T : GenericDocument
         {
@@ -100,11 +101,13 @@ namespace bf_bot.Wallets.Impl
                 Balance = _balance,
                 Message = "Bet winned",
                 BetfairLink = _betDescription,
+                CycleGuid = _cycleGuid,
             };
             IndexDocument(walletEsDoc);
 
             _step = 1;
             _betDescription = "";
+            _cycleGuid = Guid.NewGuid();
         }
 
         public void signalWin()
@@ -119,11 +122,13 @@ namespace bf_bot.Wallets.Impl
                 Balance = _balance,
                 Message = "Bet winned",
                 BetfairLink = _betDescription,
+                CycleGuid = _cycleGuid,
             };
             IndexDocument(walletEsDoc);
 
             _step = 1;
             _betDescription = "";
+            _cycleGuid = Guid.NewGuid();
         }
 
         public void signalLose()
@@ -135,6 +140,7 @@ namespace bf_bot.Wallets.Impl
                 Balance = _balance,
                 Message = "Bet lost",
                 BetfairLink = _betDescription,
+                CycleGuid = _cycleGuid,
             };
             IndexDocument(walletEsDoc);         
             
