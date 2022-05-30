@@ -9,52 +9,93 @@ using bf_bot.Wallets.Impl;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
+using Nest;
 
-var runningMode = RunningMode.TEST;
+internal class Program
+{
+    private static async Task Main(string[] args)
+    {
+        var runningMode = RunningMode.TEST;
 
-var configuration = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json")
-    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
-    .Build();
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json")
+            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
+            .Build();
 
-var elasticUrl = configuration.GetValue<string>("ElasticSearchUrl:nodeUrl");
+        var elasticClient = createElasticClient(configuration);
 
-var logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(configuration)
-    .WriteTo.Elasticsearch(
-        new ElasticsearchSinkOptions(new Uri(elasticUrl))
+        var composedUrl = createElasticConnectionUrlForSerilog(configuration);
+
+        var esSerilogIndex = configuration.GetValue<string>("Elasticsearch:serilogIndex");
+
+        var logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(configuration)
+            .WriteTo.Elasticsearch(
+                new ElasticsearchSinkOptions(new Uri(composedUrl))
+                {
+                    IndexFormat = esSerilogIndex,
+                    ModifyConnectionSettings = (configuration) =>
+                        configuration.ServerCertificateValidationCallback((o, certificate, arg3, arg4) => { return true; })
+                })
+            .CreateLogger();
+
+        Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
+
+        var serviceProvider = new ServiceCollection().AddLogging(builder =>
         {
-            IndexFormat = "bf-bot-system-logs-{0:yyyy.MM.dd}",
-            ModifyConnectionSettings = (configuration) => 
-                configuration.ServerCertificateValidationCallback((o, certificate, arg3, arg4) => { return true; })
+            builder.ClearProviders();
+            builder.AddSerilog(logger);
         })
-    .CreateLogger();
-
-Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
-        
-var serviceProvider = new ServiceCollection().AddLogging(builder => {
-    builder.ClearProviders();
-    builder.AddSerilog(logger);
-    })
-    .AddScoped<IWallet, SimpleProgressionWallet>()
-    .AddSingleton<BetfairClientInitializer>()
-    .AddScoped<IClient, BetfairRestClient>()
-    .AddScoped<IStrategy, BothTeamToScore>()
-    .BuildServiceProvider();
+            .AddScoped<IWallet, SimpleProgressionWallet>()
+            .AddScoped<IClient, BetfairRestClient>()
+            .AddScoped<IStrategy, BothTeamToScore>()
+            .BuildServiceProvider();
 
 
-var client = serviceProvider.GetRequiredService<IClient>();
-client.Init(Utility.CreateInitializer());
+        var client = serviceProvider.GetRequiredService<IClient>();
+        client.Init(Utility.CreateInitializer(), elasticClient);
 
-var wallet = serviceProvider.GetRequiredService<IWallet>();
-wallet.Init(1000, 2);
+        var wallet = serviceProvider.GetRequiredService<IWallet>();
+        wallet.Init(1000, 2, elasticClient);
 
-var strategy = serviceProvider.GetRequiredService<IStrategy>();
-strategy.Init(
-    runningMode,
-    serviceProvider.GetRequiredService<IClient>(),
-    serviceProvider.GetRequiredService<IWallet>()
-);
+        var strategy = serviceProvider.GetRequiredService<IStrategy>();
+        strategy.Init(
+            runningMode,
+            serviceProvider.GetRequiredService<IClient>(),
+            serviceProvider.GetRequiredService<IWallet>(),
+            elasticClient
+        );
 
-await strategy.Start();
+        await strategy.Start();
+    }
+
+    public static ElasticClient createElasticClient(IConfigurationRoot configuration)
+    {
+        var elasticProto = configuration.GetValue<string>("Elasticsearch:protocol");
+        var elasticUser = configuration.GetValue<string>("Elasticsearch:user");
+        var elasticPassword = configuration.GetValue<string>("Elasticsearch:password");
+        var elasticUrl = configuration.GetValue<string>("Elasticsearch:nodeUrl");
+        var esAppIndex = configuration.GetValue<string>("Elasticsearch:serilogIndex");
+        var esSerilogIndex = configuration.GetValue<string>("Elasticsearch:serilogIndex");
+
+        var esAppSettings = new ConnectionSettings(new Uri(elasticProto + "://" + elasticUrl))
+            .DefaultIndex(esAppIndex)
+            .BasicAuthentication(elasticUser, elasticPassword);
+        var elasticClient = new ElasticClient(esAppSettings);
+
+        return elasticClient;
+    }
+
+    public static string createElasticConnectionUrlForSerilog(IConfigurationRoot configuration)
+    {
+        var elasticProto = configuration.GetValue<string>("Elasticsearch:protocol");
+        var elasticUser = configuration.GetValue<string>("Elasticsearch:user");
+        var elasticPassword = configuration.GetValue<string>("Elasticsearch:password");
+        var elasticUrl = configuration.GetValue<string>("Elasticsearch:nodeUrl");
+
+        var composedUrl = elasticProto + "://" + elasticUser + ":" + elasticPassword + "@" + elasticUrl;
+
+        return composedUrl;
+    }
+}

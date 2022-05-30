@@ -6,6 +6,7 @@ using bf_bot.Json;
 using Microsoft.Extensions.Logging;
 using bf_bot.Exceptions;
 using System.Text.Json.Serialization;
+using Nest;
 
 namespace bf_bot
 {
@@ -14,17 +15,19 @@ namespace bf_bot
         public string AuthToken { get; set; }
         protected BetfairClientInitializer _betfairSettings;
         private readonly ILogger<BetfairRestClient> _logger;
+        private ElasticClient _esClient;
         public BetfairRestClient(ILogger<BetfairRestClient> logger)
         {
             _logger = logger;
         }
 
-        public bool Init(BetfairClientInitializer betfairSettings)
+        public bool Init(BetfairClientInitializer betfairSettings, ElasticClient esClient)
         {
             _logger.LogInformation("Initializing client.");
             if(Utility.AreAllPropNotNull(betfairSettings))
             {
                 _betfairSettings = betfairSettings;
+                _esClient = esClient;
                 return true;
             }
             else

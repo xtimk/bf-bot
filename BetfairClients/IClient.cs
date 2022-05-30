@@ -1,11 +1,12 @@
 using bf_bot.TO;
+using Nest;
 
 namespace bf_bot
 {
     public interface IClient
     {
         void InvalidateLogin();
-        bool Init(BetfairClientInitializer betfairSettings);
+        bool Init(BetfairClientInitializer betfairSettings, ElasticClient esClient);
         /**
         * calls indentitysso for authenticating user and sets session token
         * 

@@ -6,6 +6,7 @@ using bf_bot.Json;
 using bf_bot.TO;
 using bf_bot.Wallets;
 using Microsoft.Extensions.Logging;
+using Nest;
 
 namespace bf_bot.Strategies.Soccer
 {
@@ -29,16 +30,18 @@ namespace bf_bot.Strategies.Soccer
         private bool _active = false;
         private RunningMode _mode;
         private IWallet _wallet;
+        private ElasticClient _esClient;
         public BothTeamToScore(ILogger<BothTeamToScore> logger)
         {
             _logger = logger; // loggerFactory.CreateLogger<BothTeamToScore>();
         }
 
-        public bool Init(RunningMode mode, IClient client, IWallet wallet)
+        public bool Init(RunningMode mode, IClient client, IWallet wallet, ElasticClient esClient)
         {
             _wallet = wallet;
             _mode = mode;
-            _client = client; 
+            _client = client;
+            _esClient = esClient;
             return true;        
         }
 
@@ -64,7 +67,7 @@ namespace bf_bot.Strategies.Soccer
             {
                 var balance = 1000;
                 var win_per_cycle = 2;
-                _wallet.Init(balance, win_per_cycle);
+                _wallet.Init(balance, win_per_cycle, _esClient);
             }
             else if (_mode == RunningMode.REAL)
             {

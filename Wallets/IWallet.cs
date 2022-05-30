@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Nest;
 
 namespace bf_bot.Wallets
 {
@@ -12,7 +13,7 @@ namespace bf_bot.Wallets
                 /// <summary>
         /// Given the price returns the amount to bet
         /// </summary>
-        bool Init(double balance, double win_per_cycle);
+        bool Init(double balance, double win_per_cycle, ElasticClient esClient);
         /// <summary>
         /// Given the price returns the amount to bet
         /// </summary>

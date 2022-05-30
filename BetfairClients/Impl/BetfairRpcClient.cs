@@ -5,6 +5,7 @@ using bf_bot.TO;
 using bf_bot.Json;
 using Microsoft.Extensions.Logging;
 using bf_bot.Exceptions;
+using Nest;
 
 namespace bf_bot
 {
@@ -14,8 +15,10 @@ namespace bf_bot
         protected BetfairClientInitializer _betfairSettings;
         private readonly ILogger _logger;
         private readonly ILoggerFactory _loggerFactory;
-        public bool Init(BetfairClientInitializer betfairSettings)
+        public bool Init(BetfairClientInitializer betfairSettings, ElasticClient esClient)
         {
+            throw new NotImplementedException("Betfair rpc client not implemented yet.");
+#pragma warning disable
             _logger.LogInformation("Initializing client.");
             if(Utility.AreAllPropNotNull(betfairSettings))
             {
@@ -38,6 +41,7 @@ namespace bf_bot
             {
                 _betfairSettings = betfairSettings;
             }
+            throw new NotImplementedException("Rpc Client not implemented yet.");
         }
 
         public async Task<IList<EventTypeResult>> listEventTypes(MarketFilter marketFilter, string locale = null)

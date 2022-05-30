@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Nest;
 
 namespace bf_bot.Wallets.Impl
 {
@@ -18,13 +19,15 @@ namespace bf_bot.Wallets.Impl
         private double _lastPriceAmount;
         private string _wallet_type_name = "Simple Progression Wallet";
         private readonly ILogger _logger;
+        private ElasticClient _esClient;
 
         public SimpleProgressionWallet(ILogger<SimpleProgressionWallet> logger)
         {
             _logger = logger;
         }
-        public bool Init(double balance, double win_per_cycle)
+        public bool Init(double balance, double win_per_cycle, ElasticClient esClient)
         {
+            _esClient = esClient;
             _win_per_cycle = win_per_cycle;
             _balance = balance;
             _desired_wallet_balance = _balance + _win_per_cycle;
