@@ -10,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
 using Nest;
+using Elasticsearch.Net;
+using bf_bot.Utils;
 
 internal class Program
 {
@@ -47,6 +49,7 @@ internal class Program
             builder.ClearProviders();
             builder.AddSerilog(logger);
         })
+            .AddSingleton<AppGuid>()
             .AddScoped<IWallet, SimpleProgressionWallet>()
             .AddScoped<IClient, BetfairRestClient>()
             .AddScoped<IStrategy, BothTeamToScore>()
@@ -76,12 +79,13 @@ internal class Program
         var elasticUser = configuration.GetValue<string>("Elasticsearch:user");
         var elasticPassword = configuration.GetValue<string>("Elasticsearch:password");
         var elasticUrl = configuration.GetValue<string>("Elasticsearch:nodeUrl");
-        var esAppIndex = configuration.GetValue<string>("Elasticsearch:serilogIndex");
+        var esAppIndex = configuration.GetValue<string>("Elasticsearch:appIndex");
         var esSerilogIndex = configuration.GetValue<string>("Elasticsearch:serilogIndex");
 
         var esAppSettings = new ConnectionSettings(new Uri(elasticProto + "://" + elasticUrl))
             .DefaultIndex(esAppIndex)
-            .BasicAuthentication(elasticUser, elasticPassword);
+            .BasicAuthentication(elasticUser, elasticPassword)
+            .ServerCertificateValidationCallback(CertificateValidations.AllowAll);
         var elasticClient = new ElasticClient(esAppSettings);
 
         return elasticClient;

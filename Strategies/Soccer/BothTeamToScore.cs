@@ -4,6 +4,7 @@ using bf_bot.Constants;
 using bf_bot.Exceptions;
 using bf_bot.Json;
 using bf_bot.TO;
+using bf_bot.Utils;
 using bf_bot.Wallets;
 using Microsoft.Extensions.Logging;
 using Nest;
@@ -31,9 +32,11 @@ namespace bf_bot.Strategies.Soccer
         private RunningMode _mode;
         private IWallet _wallet;
         private ElasticClient _esClient;
-        public BothTeamToScore(ILogger<BothTeamToScore> logger)
+        private readonly AppGuid _sessionGuid;
+        public BothTeamToScore(ILogger<BothTeamToScore> logger, AppGuid sessionGuid)
         {
             _logger = logger; // loggerFactory.CreateLogger<BothTeamToScore>();
+            _sessionGuid = sessionGuid;
         }
 
         public bool Init(RunningMode mode, IClient client, IWallet wallet, ElasticClient esClient)
@@ -219,7 +222,8 @@ namespace bf_bot.Strategies.Soccer
                 return false;
             }
 
-            _wallet.signalPlaceBet(amountToBet, price);
+            var bfLink = "https://www.betfair.it/exchange/plus/football/market/" + marketId;
+            _wallet.signalPlaceBet(amountToBet, price, bfLink);
 
             _logger.LogInformation("Betfair link: https://www.betfair.it/exchange/plus/football/market/" + marketId);
 

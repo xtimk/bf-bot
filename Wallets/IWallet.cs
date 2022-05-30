@@ -27,7 +27,7 @@ namespace bf_bot.Wallets
         /// <summary>
         /// Signals the wallet that a bet has been placed
         /// </summary>
-        void signalPlaceBet(double amount, double price);
+        void signalPlaceBet(double amount, double price, string betDescription);
 
         /// <summary>
         /// Signals the wallet that a bet was won
