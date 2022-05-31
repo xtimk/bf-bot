@@ -6,6 +6,7 @@ namespace bf_bot
     public interface IClient
     {
         void InvalidateLogin();
+        bool IsInitialized();
         bool Init(BetfairClientInitializer betfairSettings, ElasticClient esClient);
         /**
         * calls indentitysso for authenticating user and sets session token

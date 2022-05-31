@@ -9,8 +9,11 @@ namespace bf_bot.Wallets
 {
     public interface IWallet
     {
-
-                /// <summary>
+        /// <summary>
+        /// Check if the wallet has been initialized
+        /// </summary>
+        bool IsInitialized();
+        /// <summary>
         /// Given the price returns the amount to bet
         /// </summary>
         bool Init(double balance, double win_per_cycle, ElasticClient esClient);

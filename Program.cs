@@ -60,7 +60,16 @@ internal class Program
         client.Init(Utility.CreateInitializer(), elasticClient);
 
         var wallet = serviceProvider.GetRequiredService<IWallet>();
-        wallet.Init(1000, 2, elasticClient);
+        if(runningMode == RunningMode.TEST)
+        {
+            var balance = 1000;
+            var win_per_cycle = 2;
+            wallet.Init(balance, win_per_cycle, elasticClient);
+        }
+        else if (runningMode == RunningMode.REAL)
+        {
+            throw new NotImplementedException("Method to retrieve account balance not implemented.");
+        }
 
         var strategy = serviceProvider.GetRequiredService<IStrategy>();
         strategy.Init(

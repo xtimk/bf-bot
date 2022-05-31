@@ -10,6 +10,6 @@ namespace bf_bot.Elasticsearch
         public DateTime Timestamp { get; set; }
         public string Message { get; set; }
         public string DocType { get; set; }
-        public string SessionGuid { get; set; }
+        public Guid SessionGuid { get; set; }
     }
 }

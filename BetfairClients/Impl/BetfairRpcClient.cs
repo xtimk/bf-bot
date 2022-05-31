@@ -15,6 +15,12 @@ namespace bf_bot
         protected BetfairClientInitializer _betfairSettings;
         private readonly ILogger _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private bool _isInitialized = false;
+
+        public bool IsInitialized()
+        {
+            return _isInitialized;
+        }        
         public bool Init(BetfairClientInitializer betfairSettings, ElasticClient esClient)
         {
             throw new NotImplementedException("Betfair rpc client not implemented yet.");

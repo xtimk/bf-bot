@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
 using bf_bot.Constants;
 using bf_bot.Exceptions;
 using bf_bot.Json;
@@ -22,7 +20,7 @@ namespace bf_bot.Strategies.Soccer
 
         // Strategy constants
         private string _marketCatalogueMaxResults = "100";
-        private int _timer = 5000;
+        private int _timer = 20000;
         private int _wait_result_timer = 60000;
         // --
 
@@ -53,10 +51,21 @@ namespace bf_bot.Strategies.Soccer
             _logger.LogInformation("Starting BothTeamToScore strategy.");
             _logger.LogInformation("Running Mode: " + _mode);
 
+            if (!_client.IsInitialized())
+            {
+                _logger.LogCritical("Betfair client not initialized. Stopping strategy.");
+                return;
+            }
+
+            if (!_wallet.IsInitialized())
+            {
+                _logger.LogCritical("Wallet not initialized. Stopping strategy.");
+                return;
+            }
+            
             if(_mode == RunningMode.REAL)
                 throw new NotImplementedException("Bot in real mode is not implemented.");
 
-            // first of all authenticate the client.
             var logged_in = await _client.RequestLogin();
             if(!logged_in)
             {
@@ -66,17 +75,6 @@ namespace bf_bot.Strategies.Soccer
 
             _active = true;
 
-            if(_mode == RunningMode.TEST)
-            {
-                var balance = 1000;
-                var win_per_cycle = 2;
-                _wallet.Init(balance, win_per_cycle, _esClient);
-            }
-            else if (_mode == RunningMode.REAL)
-            {
-                // here i need to call the betfair api to retrieve the balance of the account.
-                throw new NotImplementedException("Method to retrieve account balance not implemented.");
-            }
             _logger.LogInformation("Starting with wallet of type <" + _wallet.getWalletName() + ">. Balance is " + _wallet.getBalance() + "EUR");
             try
             {
@@ -223,14 +221,13 @@ namespace bf_bot.Strategies.Soccer
             }
 
             var bfLink = "https://www.betfair.it/exchange/plus/football/market/" + marketId;
+            _logger.LogInformation("Betfair link: " + bfLink);
             _wallet.signalPlaceBet(amountToBet, price, bfLink);
-
-            _logger.LogInformation("Betfair link: https://www.betfair.it/exchange/plus/football/market/" + marketId);
 
             return true;
         }
 
-#pragma warning disable
+        #pragma warning disable
         private async Task<bool> PlaceRealBet(string marketId, long selectionId, double amountToBet, double price)
         {
             _logger.LogCritical("Place real bet here. Not implemented yet!");

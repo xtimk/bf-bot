@@ -18,6 +18,12 @@ namespace bf_bot
         private readonly ILogger<BetfairRestClient> _logger;
         private ElasticClient _esClient;
         private readonly AppGuid _sessionGuid;
+        private bool _isInitialized = false;
+
+        public bool IsInitialized()
+        {
+            return _isInitialized;
+        }
         public BetfairRestClient(ILogger<BetfairRestClient> logger, AppGuid sessionGuid)
         {
             _logger = logger;
@@ -31,11 +37,13 @@ namespace bf_bot
             {
                 _betfairSettings = betfairSettings;
                 _esClient = esClient;
+                _isInitialized = true;
                 return true;
             }
             else
             {
                 _logger.LogError("Can't initialize betfair client.");
+                _isInitialized = false;
                 return false;
             }
         }

@@ -25,12 +25,17 @@ namespace bf_bot.Wallets.Impl
         private string _betDescription;
         private readonly AppGuid _sessionGuid;
         private Guid _cycleGuid;
+        private bool _isInitialized = false;
 
+        public bool IsInitialized()
+        {
+            return _isInitialized;
+        }        
         private void IndexDocument<T>(T doc) where T : GenericDocument
         {
             doc.Timestamp = DateTime.Now;
             doc.DocType = typeof(T).ToString();
-            doc.SessionGuid = _sessionGuid.AppSessionId.ToString();
+            doc.SessionGuid = _sessionGuid.AppSessionId;
 
             var indexResponse = _esClient.IndexDocument(doc);
             if (!indexResponse.IsValid)
@@ -59,6 +64,7 @@ namespace bf_bot.Wallets.Impl
             };
             IndexDocument(walletEsDoc);
 
+            _isInitialized = true;
             return true;
         }
 
