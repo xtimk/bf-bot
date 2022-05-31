@@ -17,13 +17,13 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        var runningMode = RunningMode.TEST;
-
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json")
             .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
             .Build();
+        
+        var runningMode = readRunningMode(configuration);
 
         var elasticClient = createElasticClient(configuration);
 
@@ -33,22 +33,24 @@ internal class Program
 
         var logger = new LoggerConfiguration()
             .ReadFrom.Configuration(configuration)
+            // I put elasticsearch here instead of in the appsettings.json 
+            // because i need to override the ServerCertificateValidationCallback
+            // in order to trust self-signed certs.
             .WriteTo.Elasticsearch(
                 new ElasticsearchSinkOptions(new Uri(composedUrl))
                 {
                     IndexFormat = esSerilogIndex,
-                    ModifyConnectionSettings = (configuration) =>
+                    ModifyConnectionSettings = configuration =>
                         configuration.ServerCertificateValidationCallback((o, certificate, arg3, arg4) => { return true; })
                 })
             .CreateLogger();
-
         // Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
 
         var serviceProvider = new ServiceCollection().AddLogging(builder =>
-        {
-            builder.ClearProviders();
-            builder.AddSerilog(logger);
-        })
+            {
+                builder.ClearProviders();
+                builder.AddSerilog(logger);
+            })
             .AddSingleton<AppGuid>()
             .AddScoped<IWallet, SimpleProgressionWallet>()
             .AddScoped<IClient, BetfairRestClient>()
@@ -60,16 +62,7 @@ internal class Program
         client.Init(Utility.CreateInitializer(), elasticClient);
 
         var wallet = serviceProvider.GetRequiredService<IWallet>();
-        if(runningMode == RunningMode.TEST)
-        {
-            var balance = 1000;
-            var win_per_cycle = 2;
-            wallet.Init(balance, win_per_cycle, elasticClient);
-        }
-        else if (runningMode == RunningMode.REAL)
-        {
-            throw new NotImplementedException("Method to retrieve account balance not implemented.");
-        }
+        InitializeWallet(wallet, runningMode, elasticClient);
 
         var strategy = serviceProvider.GetRequiredService<IStrategy>();
         strategy.Init(
@@ -80,6 +73,32 @@ internal class Program
         );
 
         await strategy.Start();
+    }
+
+    public static void InitializeWallet(IWallet wallet, RunningMode runningMode, ElasticClient elasticClient)
+    {
+        if(runningMode == RunningMode.TEST)
+        {
+            var balance = 1000;
+            var win_per_cycle = 2;
+            wallet.Init(balance, win_per_cycle, elasticClient);
+        }
+        else if (runningMode == RunningMode.REAL)
+        {
+            throw new NotImplementedException("Method to retrieve account balance not implemented.");
+        }
+    }
+
+    public static RunningMode readRunningMode(IConfigurationRoot configuration)
+    {
+        var runningMode_s = configuration.GetValue<string>("RunningMode");
+        var runningMode = runningMode_s switch
+        {
+            "TEST" => RunningMode.TEST,
+            "REAL" => RunningMode.REAL,
+            _ => throw new ArgumentException("The running mode specified (" + runningMode_s + ") is not valid. Valid values are TEST, REAL")
+        };
+        return runningMode;
     }
 
     public static ElasticClient createElasticClient(IConfigurationRoot configuration)
