@@ -75,7 +75,7 @@ namespace bf_bot.Strategies.Soccer
 
             _active = true;
 
-            _logger.LogInformation("Starting with wallet of type <" + _wallet.getWalletName() + ">. Balance is " + _wallet.getBalance() + "EUR");
+            _logger.LogInformation("Starting with wallet of type \"" + _wallet.getWalletName() + "\". Balance is " + _wallet.getBalance() + "EUR");
             try
             {
                 await DoStrategy();
@@ -106,7 +106,7 @@ namespace bf_bot.Strategies.Soccer
         {
             while(_active)
             {
-                _logger.LogInformation("Searching match suitable with desired conditions.");
+                _logger.LogDebug("Searching match suitable with desired conditions.");
 
                 Thread.Sleep(_timer);
 
@@ -121,14 +121,14 @@ namespace bf_bot.Strategies.Soccer
                 marketBooks = FilterOpenMarketBooks(marketBooks);
                 if (marketBooks.Count() == 0)
                 {
-                    _logger.LogInformation("No open market found. Will retry in a moment.");
+                    _logger.LogDebug("No open market found. Will retry in a moment.");
                     continue;
                 }
 
                 marketBooks = FilterMarketBooksByCondition(marketBooks, _condition);
                 if (marketBooks.Count() == 0)
                 {
-                    _logger.LogInformation("No marketbooks matching the strategy conditions. Will retry in a moment.");
+                    _logger.LogDebug("No marketbooks matching the strategy conditions. Will retry in a moment.");
                     continue;
                 }
 
@@ -148,7 +148,7 @@ namespace bf_bot.Strategies.Soccer
 
         public async Task<bool> WaitForBetResult(MarketBook marketBook)
         {
-            _logger.LogInformation("Waiting for bet results.");
+            _logger.LogInformation("Now waiting for bet results.");
             ISet<PriceData> priceData = new HashSet<PriceData>();
             priceData.Add(PriceData.EX_BEST_OFFERS);
             
@@ -166,7 +166,7 @@ namespace bf_bot.Strategies.Soccer
                 runnerBook = (IList<MarketBook>)await InvokeBetfairClientMethodAsync(() => _client.listRunnerBook(marketId, selectionId, priceProjection));
             }
 
-            _logger.LogInformation("Game has ended!");
+            _logger.LogDebug("Game has ended!");
 
             if(runnerBook.First().Runners[0].Status == RunnerStatus.WINNER)
             {
@@ -195,12 +195,12 @@ namespace bf_bot.Strategies.Soccer
             var amountToBet = Math.Round(_wallet.getAmountToBet(price), 2, MidpointRounding.AwayFromZero);
             if(amountToBet > size)
             {
-                _logger.LogInformation("Insufficient liquidity in the bet pool.");
+                _logger.LogWarning("Insufficient liquidity in the bet pool.");
                 return false;
             }
             if(amountToBet < 2)
             {
-                _logger.LogWarning("The betting amount <" + amountToBet + "> is less than the minimum allowed bet (2 EUR). Will automatically bet 2 EUR.");
+                _logger.LogWarning("The betting amount (" + amountToBet + " EUR) is less than the minimum allowed bet (2 EUR). Will automatically bet 2 EUR.");
                 amountToBet = 2;
             }
 
@@ -221,8 +221,8 @@ namespace bf_bot.Strategies.Soccer
             }
 
             var bfLink = "https://www.betfair.it/exchange/plus/football/market/" + marketId;
-            _logger.LogInformation("Betfair link: " + bfLink);
             _wallet.signalPlaceBet(amountToBet, price, bfLink);
+            _logger.LogInformation("Betfair link: " + bfLink);
 
             return true;
         }
@@ -237,7 +237,7 @@ namespace bf_bot.Strategies.Soccer
 
         private bool PlaceFakeBet(string marketId, long selectionId, double amountToBet, double price)
         {
-            _logger.LogInformation("Placed bet in TEST mode: " + amountToBet + "EUR @ " + price);
+            _logger.LogDebug("Placed bet in TEST mode: " + amountToBet + "EUR @ " + price);
             return true;
         }
 

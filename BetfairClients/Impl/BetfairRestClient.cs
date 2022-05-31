@@ -32,7 +32,7 @@ namespace bf_bot
 
         public bool Init(BetfairClientInitializer betfairSettings, ElasticClient esClient)
         {
-            _logger.LogInformation("Initializing client. App session guid: <" + _sessionGuid.AppSessionId.ToString() + ">");
+            _logger.LogInformation("Initializing betfair client. App session guid is \"" + _sessionGuid.AppSessionId.ToString() + "\"");
             if(Utility.AreAllPropNotNull(betfairSettings))
             {
                 _betfairSettings = betfairSettings;
