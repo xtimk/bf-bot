@@ -42,7 +42,7 @@ internal class Program
                 })
             .CreateLogger();
 
-        Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
+        // Serilog.Debugging.SelfLog.Enable(Console.WriteLine);
 
         var serviceProvider = new ServiceCollection().AddLogging(builder =>
         {
