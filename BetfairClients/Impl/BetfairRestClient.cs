@@ -271,17 +271,17 @@ namespace bf_bot
         }
         public async Task<bool> RequestLogin()
         {
-            _logger.LogInformation("Requested login to betfair account endpoint.");
+            _logger.LogDebug("Requested login to betfair account endpoint.");
             var loginResult = await this.Login();
             if(loginResult.IsOk)
             {
-                _logger.LogInformation("Successfully logged in.");
-                _logger.LogDebug("Token: " + AuthToken);
+                _logger.LogDebug("Successfully logged in.");
+                _logger.LogTrace("Token: " + AuthToken);
                 return true;
             }
             else
             {
-                _logger.LogError("Cant authenticate user. Check user credentials in json file.");
+                _logger.LogError("Cant authenticate into betfair. Check user credentials in json file.");
                 _logger.LogTrace(Utility.PrettyJsonObject(loginResult));
                 return false;
             } 
