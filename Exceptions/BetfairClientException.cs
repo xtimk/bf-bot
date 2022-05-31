@@ -20,7 +20,7 @@ namespace bf_bot.Exceptions
         {
             Body = body;
             BFMessage = message;
-            logger.LogError(message + ". Details: " + body);
+            // logger.LogError(message + ". Details: " + body);
         }
         public BetfairClientException(ILogger logger, string message, Exception inner) : base(message, inner)
         {
