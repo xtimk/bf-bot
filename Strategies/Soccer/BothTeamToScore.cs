@@ -185,9 +185,11 @@ namespace bf_bot.Strategies.Soccer
         {
 
             // Runners[0] stays for BothTeamToScore YES
-            // I take first() since im using EX_BEST_OFFERS, that returns a single offer.
-            var price = marketBook.Runners[0].ExchangePrices.AvailableToBack.First().Price;
-            var size = marketBook.Runners[0].ExchangePrices.AvailableToBack.First().Size;
+            // I take the best offer (the offer with higher price.)
+            var bestExchangeOfferByPrice = marketBook.Runners[0].ExchangePrices.AvailableToBack.OrderByDescending(x => x.Price).FirstOrDefault();
+
+            var price = bestExchangeOfferByPrice.Price;
+            var size = bestExchangeOfferByPrice.Size;
 
             var marketId = marketBook.MarketId;
             var selectionId = marketBook.Runners[0].SelectionId;
@@ -325,15 +327,13 @@ namespace bf_bot.Strategies.Soccer
             {
                 try
                 {
-                    // get first runner available to back = Bet on Both Teams to Score yes.
-                    var filteredList = item.Runners[0].ExchangePrices.AvailableToBack
-                        .Where(
-                            x => x.Price < condition.MaxPrice && 
-                            x.Price > condition.MinPrice && 
-                            x.Size > condition.MinSize
-                        );
-                    if (filteredList.Count() > 0)
+                    var bestExchangeOfferByPrice = item.Runners[0].ExchangePrices.AvailableToBack.OrderByDescending(x => x.Price).FirstOrDefault();
+                    if (bestExchangeOfferByPrice.Price < condition.MaxPrice &&
+                        bestExchangeOfferByPrice.Price > condition.MinPrice &&
+                        bestExchangeOfferByPrice.Size > condition.MinSize)
+                    {
                         filteredMarketBooks.Add(item);
+                    }
                 }
                 catch (System.Exception)
                 {
@@ -371,25 +371,25 @@ namespace bf_bot.Strategies.Soccer
                     var errorCode = errorDetails.detail.APINGException.errorCode;
                     if(errorCode == "INVALID_SESSION_INFORMATION")
                     {
-                        _logger.LogInformation("Authentication token has expired.");
+                        _logger.LogDebug("Authentication token has expired.");
                         await _client.RequestLogin();
                         return true;
                     }
                     else
                     {
-                        _logger.LogWarning("Betfair errorCode not handled. Trace: " + e.Body);
+                        _logger.LogError("A Betfair client error with errorCode not handled has been encountered. Message: " + e.BFMessage + ". Body: " + e.Body);
                         return false;
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    _logger.LogWarning("Betfair client error not handled: " + ex);
+                    _logger.LogError("An error has been encountered while handling a betfair client error. Details: " + ex);
                     return false;
                 }
             }
             else
             {
-                _logger.LogError("A client error has been encountered while executing strategy. Details: " + e.Message);
+                _logger.LogError("A betfair client error has been encountered while executing strategy. Details: " + e.Message);
                 return false;
             }
         }
