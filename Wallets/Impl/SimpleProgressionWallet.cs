@@ -71,7 +71,8 @@ namespace bf_bot.Wallets.Impl
         public double getAmountToBet(double price)
         {
             var amountToWin = _desired_wallet_balance - _balance;
-            return amountToWin/(price - 1);
+            var amountToBet = Math.Round(amountToWin/(price - 1), 2, MidpointRounding.AwayFromZero);
+            return amountToBet;
         }
 
         public void signalPlaceBet(double amount, double price, string betDescription)

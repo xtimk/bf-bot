@@ -194,7 +194,7 @@ namespace bf_bot.Strategies.Soccer
             var marketId = marketBook.MarketId;
             var selectionId = marketBook.Runners[0].SelectionId;
 
-            var amountToBet = Math.Round(_wallet.getAmountToBet(price), 2, MidpointRounding.AwayFromZero);
+            var amountToBet = _wallet.getAmountToBet(price);
             if(amountToBet > size)
             {
                 _logger.LogWarning("Insufficient liquidity in the bet pool.");
