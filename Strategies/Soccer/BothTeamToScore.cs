@@ -4,6 +4,7 @@ using bf_bot.Json;
 using bf_bot.TO;
 using bf_bot.Utils;
 using bf_bot.Wallets;
+using Elasticsearch.Net.Specification.ClusterApi;
 using Microsoft.Extensions.Logging;
 using Nest;
 
@@ -14,7 +15,7 @@ namespace bf_bot.Strategies.Soccer
         // Strategy condition: ToDO: pass this instead of defining it locally
         private MarketBookFilterCondition _condition = new() {
             MaxPrice = 4,
-            MinPrice = 1.5,
+            MinPrice = 1.7,
             MinSize = 10
         };
 
@@ -23,6 +24,7 @@ namespace bf_bot.Strategies.Soccer
         private int _timer = 20000;
         private int _wait_result_timer = 60000;
         private int _http_retry_timeout_timer = 10000;
+        private readonly string _stragegy_name = "BothTeamToScore";
         // --
 
         private IClient _client;
@@ -45,6 +47,11 @@ namespace bf_bot.Strategies.Soccer
             _client = client;
             _esClient = esClient;
             return true;        
+        }
+
+        public string getStrategyName()
+        {
+            return _stragegy_name;
         }
 
         public async Task Start()

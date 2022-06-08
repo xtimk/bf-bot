@@ -19,13 +19,14 @@ namespace bf_bot.Wallets.Impl
         private double _desired_wallet_balance;
         private double _lastBetAmount;
         private double _lastPriceAmount;
-        private string _wallet_type_name = "Simple Progression Wallet";
+        private readonly string _wallet_type_name = "Simple Progression Wallet";
         private readonly ILogger _logger;
         private ElasticClient _esClient;
         private string _betDescription;
         private readonly AppGuid _sessionGuid;
         private Guid _cycleGuid;
         private bool _isInitialized = false;
+        private IStrategy _strategy;
 
         public bool IsInitialized()
         {
@@ -36,6 +37,8 @@ namespace bf_bot.Wallets.Impl
             doc.Timestamp = DateTime.Now;
             doc.DocType = typeof(T).ToString();
             doc.SessionGuid = _sessionGuid.AppSessionId;
+            doc.StrategyName = _strategy.getStrategyName();
+            doc.WalletName = this.getWalletName();
 
             var indexResponse = _esClient.IndexDocument(doc);
             if (!indexResponse.IsValid)
@@ -44,11 +47,13 @@ namespace bf_bot.Wallets.Impl
             }
         }
 
-        public SimpleProgressionWallet(ILogger<SimpleProgressionWallet> logger, AppGuid sessionGuid)
+        public SimpleProgressionWallet(ILogger<SimpleProgressionWallet> logger, AppGuid sessionGuid, IStrategy strategy)
         {
+            _strategy = strategy;
             _logger = logger;
             _sessionGuid = sessionGuid;
         }
+
         public bool Init(double balance, double win_per_cycle, ElasticClient esClient)
         {
             _esClient = esClient;
@@ -57,14 +62,12 @@ namespace bf_bot.Wallets.Impl
             _desired_wallet_balance = _balance + _win_per_cycle;
             _step = 1;
             _betDescription = "";
-
+            _isInitialized = true;
             var walletEsDoc = new InitDocument(){
                 Balance = _balance,
                 Message = "Bot started",
             };
-            IndexDocument(walletEsDoc);
-
-            _isInitialized = true;
+            IndexDocument(walletEsDoc);   
             return true;
         }
 

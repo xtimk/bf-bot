@@ -62,9 +62,9 @@ internal class Program
         client.Init(Utility.CreateInitializer(), elasticClient);
 
         var wallet = serviceProvider.GetRequiredService<IWallet>();
-        InitializeWallet(wallet, runningMode, elasticClient);
 
         var strategy = serviceProvider.GetRequiredService<IStrategy>();
+
         strategy.Init(
             runningMode,
             serviceProvider.GetRequiredService<IClient>(),
@@ -72,6 +72,8 @@ internal class Program
             elasticClient
         );
 
+        InitializeWallet(wallet, runningMode, elasticClient);
+        
         await strategy.Start();
     }
 
