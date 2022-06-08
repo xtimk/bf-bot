@@ -24,7 +24,7 @@ namespace bf_bot.Strategies.Soccer
         private int _timer = 20000;
         private int _wait_result_timer = 60000;
         private int _http_retry_timeout_timer = 10000;
-        private readonly string _stragegy_name = "BothTeamToScore";
+        private readonly string _stragegy_name = "Both Teams To Score";
         // --
 
         private IClient _client;
